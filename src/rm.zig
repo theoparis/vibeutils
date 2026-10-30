@@ -214,7 +214,7 @@ pub fn runRm(
         args,
         "rm",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     if (rejectAbbreviatedNoPreserveRoot(
@@ -222,25 +222,25 @@ pub fn runRm(
         stderr_writer,
         args,
         parsed_args.no_preserve_root,
-    )) return @intFromEnum(common.ExitCode.general_error);
+    )) return @backingInt(common.ExitCode.general_error);
 
     // Handle help flag
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version flag
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const files = parsed_args.positionals;
     if (files.len == 0) {
-        if (parsed_args.force) return @intFromEnum(common.ExitCode.success);
+        if (parsed_args.force) return @backingInt(common.ExitCode.success);
         common.printErrorWithProgram(allocator, stderr_writer, "rm", "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -W: undelete is not supported on Linux. Print error and
@@ -248,7 +248,7 @@ pub fn runRm(
     // asked to recover it would be dangerous data loss.
     if (parsed_args.undelete) {
         try stderr_writer.writeAll("rm: -W (undelete) not supported on this platform\n");
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Create options structure - merge -i/-I and -r/-R flags
@@ -266,9 +266,9 @@ pub fn runRm(
 
     const success = try removeFiles(allocator, io, files, stdout_writer, stderr_writer, options);
     return if (success)
-        @intFromEnum(common.ExitCode.success)
+        @backingInt(common.ExitCode.success)
     else
-        @intFromEnum(common.ExitCode.general_error);
+        @backingInt(common.ExitCode.general_error);
 }
 
 /// Prints help information to the specified writer.
@@ -2535,7 +2535,7 @@ test "rm: -d non-empty directory appends recursive-removal hint" {
     );
     defer testing.allocator.free(expected);
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expectEqualStrings(expected, stderr_aw.writer.buffered());
 }
 
@@ -2557,7 +2557,7 @@ test "rm: -r leftover non-empty directory does not suggest -r" {
     file.close(testing.io);
     const dir_path = try tmp.getPath("locked");
     defer testing.allocator.free(dir_path);
-    const dir_path_z = try testing.allocator.dupeZ(u8, dir_path);
+    const dir_path_z = try testing.allocator.dupeSentinel(u8, dir_path, 0);
     defer testing.allocator.free(dir_path_z);
     if (std.c.chmod(dir_path_z, 0o555) != 0) return error.SkipZigTest;
     defer _ = std.c.chmod(dir_path_z, 0o755);
@@ -2580,7 +2580,7 @@ test "rm: -r leftover non-empty directory does not suggest -r" {
     defer testing.allocator.free(expected_line);
     const stderr = stderr_aw.writer.buffered();
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expect(std.mem.find(u8, stderr, expected_line) != null);
     try testing.expect(std.mem.find(u8, stderr, "(") == null);
 }

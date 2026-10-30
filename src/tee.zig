@@ -49,19 +49,19 @@ pub fn runTee(
         args,
         "tee",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Set up signal handling if ignore_interrupts is enabled
@@ -159,7 +159,7 @@ fn runTeeWithInput(
     // Flush per-file writers for the same reason.
     runTeeWithInput_flushFiles(allocator, stderr_writer, &multi, args.positionals, &has_error);
 
-    return @intFromEnum(if (has_error) common.ExitCode.general_error else common.ExitCode.success);
+    return @backingInt(if (has_error) common.ExitCode.general_error else common.ExitCode.success);
 }
 
 /// Read one chunk from the input reader into `buffer`.

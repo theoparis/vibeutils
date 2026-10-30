@@ -984,8 +984,8 @@ fn walkDirectoryOperand(
     };
 
     var state = WalkState{
-        .subtree_sizes = [_]u64{0} ** accumulation_stack_len,
-        .direct_file_sizes = [_]u64{0} ** accumulation_stack_len,
+        .subtree_sizes = @as([accumulation_stack_len]u64, @splat(0)),
+        .direct_file_sizes = @as([accumulation_stack_len]u64, @splat(0)),
     };
 
     // The walker now classifies every entry's kind before descending: under a
@@ -1540,7 +1540,7 @@ pub fn runDu(
             "cannot both summarize and show each directory's size",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const deref_mode = resolveDerefMode(args);
@@ -1613,7 +1613,7 @@ fn runDu_processPaths(
             "cannot record listing: out of memory",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     emitPrintedListing(&out, config);
 
@@ -1636,7 +1636,7 @@ fn runDu_parseArgsError(allocator: Allocator, stderr: *std.Io.Writer, err: anyer
                 "invalid option\nTry 'du --help' for more information.",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.MissingValue => {
             common.printErrorWithProgram(
@@ -1646,7 +1646,7 @@ fn runDu_parseArgsError(allocator: Allocator, stderr: *std.Io.Writer, err: anyer
                 "option requires an argument\nTry 'du --help' for more information.",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidValue => {
             common.printErrorWithProgram(
@@ -1656,7 +1656,7 @@ fn runDu_parseArgsError(allocator: Allocator, stderr: *std.Io.Writer, err: anyer
                 "invalid argument value\nTry 'du --help' for more information.",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         else => {
             common.printErrorWithProgram(
@@ -1666,7 +1666,7 @@ fn runDu_parseArgsError(allocator: Allocator, stderr: *std.Io.Writer, err: anyer
                 "argument parsing error",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
     }
 }
@@ -1693,7 +1693,7 @@ fn runDu_resolveConfigError(
                 "invalid --block-size argument",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidMaxDepth => {
             common.printErrorWithProgram(
@@ -1703,7 +1703,7 @@ fn runDu_resolveConfigError(
                 "invalid maximum depth '{s}'",
                 .{opts.max_depth orelse ""},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidColorMode => {
             common.printErrorWithProgram(
@@ -1714,7 +1714,7 @@ fn runDu_resolveConfigError(
                     "Valid arguments are: 'always', 'auto', 'never'",
                 .{opts.color orelse ""},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidIconMode => {
             common.printErrorWithProgram(
@@ -1725,7 +1725,7 @@ fn runDu_resolveConfigError(
                     "Valid arguments are: 'always', 'auto', 'never'",
                 .{opts.icons orelse ""},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidThreshold => {
             common.printErrorWithProgram(
@@ -1735,7 +1735,7 @@ fn runDu_resolveConfigError(
                 "invalid --threshold argument '{s}'",
                 .{opts.threshold orelse ""},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         else => unreachable,
     }
@@ -1833,7 +1833,7 @@ fn testCreateDuAllocatedFile(io: std.Io, tmp_dir: *TestDir) ![]u8 {
     // 64 KiB of real bytes so `-h` still prints a K/kB suffix on ext4,
     // APFS, and FFS. A 2048-byte write can stay under 1 KiB allocated on
     // some FreeBSD guests, where `formatHumanReadable` has no suffix.
-    const data = [_]u8{'x'} ** 65536;
+    const data = @as([65536]u8, @splat('x'));
     try file.writeStreamingAll(io, &data);
 
     const path = try tmp_dir.getPath("allocated.bin");
@@ -1853,7 +1853,7 @@ fn testCreateDuThresholdFile(io: std.Io, tmp_dir: *TestDir) ![]u8 {
     defer file.close(io);
     // 2048 data bytes typically allocate 2-4 KiB, so `--threshold=-4k`
     // still includes the file while `-h` keeps a K suffix.
-    const data = [_]u8{'x'} ** 2048;
+    const data = @as([2048]u8, @splat('x'));
     try file.writeStreamingAll(io, &data);
 
     const path = try tmp_dir.getPath("threshold.bin");
@@ -2551,7 +2551,7 @@ test "du getFileSize apparent vs disk" {
 
     const f = try tmp_dir.dir().createFile(io, "test.bin", .{});
     // Write exactly 100 bytes
-    const data = [_]u8{0xAA} ** 100;
+    const data = @as([100]u8, @splat(0xAA));
     try f.writeStreamingAll(io, &data);
     f.close(io);
 
@@ -3482,7 +3482,7 @@ test "du -t filters entries below threshold" {
 
     // Create a larger file (100 bytes)
     const f_large = try tmp_dir.dir().createFile(io, "large.txt", .{});
-    const data = [_]u8{'x'} ** 100;
+    const data = @as([100]u8, @splat('x'));
     try f_large.writeStreamingAll(io, &data);
     f_large.close(io);
 
@@ -3522,7 +3522,7 @@ test "du -t with negative threshold shows entries at or below size" {
 
     // Create a larger file (200 bytes)
     const f_large = try tmp_dir.dir().createFile(io, "big.txt", .{});
-    const data = [_]u8{'x'} ** 200;
+    const data = @as([200]u8, @splat('x'));
     try f_large.writeStreamingAll(io, &data);
     f_large.close(io);
 
@@ -4089,7 +4089,7 @@ test "du counts a hard-linked file once across the whole walk" {
 
     // A 40-byte file plus a hard link to it in the same directory.
     const f = try tmp_dir.dir().createFile(io, "original.txt", .{});
-    const data = [_]u8{'Z'} ** 40;
+    const data = @as([40]u8, @splat('Z'));
     try f.writeStreamingAll(io, &data);
     f.close(io);
 
@@ -4137,7 +4137,7 @@ test "du -l counts a hard-linked file every time it is encountered" {
     defer tmp_dir.deinit();
 
     const f = try tmp_dir.dir().createFile(io, "original.txt", .{});
-    const data = [_]u8{'Z'} ** 40;
+    const data = @as([40]u8, @splat('Z'));
     try f.writeStreamingAll(io, &data);
     f.close(io);
 
@@ -4190,7 +4190,7 @@ test "du -S directory total excludes subdirectory subtrees but root total still 
     ft.close(io);
     try tmp_dir.dir().createDir(io, "sub", .default_dir);
     const fs = try tmp_dir.dir().createFile(io, "sub/inner.txt", .{});
-    const data = [_]u8{'I'} ** 30;
+    const data = @as([30]u8, @splat('I'));
     try fs.writeStreamingAll(io, &data); // 30
     fs.close(io);
 
@@ -4230,7 +4230,7 @@ test "du -S in disk-usage mode includes the directory's own block allocation" {
     defer tmp_dir.deinit();
 
     const ft = try tmp_dir.dir().createFile(io, "direct.txt", .{});
-    const data = [_]u8{'D'} ** 4096;
+    const data = @as([4096]u8, @splat('D'));
     try ft.writeStreamingAll(io, &data); // big enough to occupy real blocks
     ft.close(io);
 
@@ -4285,7 +4285,7 @@ test "du -d 1 hides deep entries but still accumulates their sizes upward" {
     try tmp_dir.dir().createDir(io, "mid", .default_dir);
     try tmp_dir.dir().createDir(io, "mid/deep", .default_dir);
     const fd = try tmp_dir.dir().createFile(io, "mid/deep/d.txt", .{});
-    const data = [_]u8{'X'} ** 50;
+    const data = @as([50]u8, @splat('X'));
     try fd.writeStreamingAll(io, &data);
     fd.close(io);
 
@@ -4367,7 +4367,7 @@ test "du default (-P) reports symlink size, not its target's subtree" {
     // A real dir with a 1000-byte file, plus a symlink to it inside root.
     try tmp_dir.dir().createDir(io, "real", .default_dir);
     const fr = try tmp_dir.dir().createFile(io, "real/big.txt", .{});
-    const data = [_]u8{'R'} ** 1000;
+    const data = @as([1000]u8, @splat('R'));
     try fr.writeStreamingAll(io, &data);
     fr.close(io);
     tmp_dir.dir().symLink(io, "real", "alias", .{}) catch |err| {

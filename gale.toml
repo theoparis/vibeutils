@@ -1,5 +1,5 @@
 [packages]
-zig = "0.16.0-1"
+zig = "0.17.0-1"
   actionlint = "1.7.12-2"
 
 [pinned]

@@ -331,7 +331,7 @@ fn parseRepeat(str: []const u8, i: *usize) ?RepeatResult {
 /// Build a complement of the given set: all byte values NOT in the set,
 /// ordered by byte value.
 fn complementSet(allocator: Allocator, set: []const u8) ![]u8 {
-    var in_set = [_]bool{false} ** 256;
+    var in_set = @as([256]bool, @splat(false));
     for (set) |b| {
         in_set[b] = true;
     }
@@ -382,7 +382,7 @@ fn buildTranslationTable(set1: []const u8, set2: []const u8) [256]u8 {
 
 /// Build a boolean table for which bytes are in a set.
 fn buildSetMembership(set: []const u8) [256]bool {
-    var table = [_]bool{false} ** 256;
+    var table = @as([256]bool, @splat(false));
     for (set) |b| {
         table[b] = true;
     }
@@ -410,17 +410,17 @@ pub fn runTr(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     if (parsed.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate operand count
@@ -432,7 +432,7 @@ pub fn runTr(
             "missing operand\nTry 'tr --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -d without -s requires only SET1
@@ -450,7 +450,7 @@ pub fn runTr(
             "missing operand after '{s}'\nTwo strings must be given when translating.",
             .{parsed.positionals[0]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     if (parsed.delete and parsed.squeeze_repeats and parsed.positionals.len < 2) {
@@ -462,7 +462,7 @@ pub fn runTr(
                 "deleting and squeezing.",
             .{parsed.positionals[0]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     var stdin_buffer: [8192]u8 = undefined;
@@ -697,7 +697,7 @@ fn runTrWithInput(
             "extra operand '{s}'",
             .{args.positionals[max_positionals]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     // Past the extra-operand guard, surplus operands have been rejected.
     assert(args.positionals.len <= max_positionals);
@@ -710,8 +710,8 @@ fn runTrWithInput(
         stderr_writer,
     )) {
         .ok => |built| built,
-        .set1_invalid => return @intFromEnum(common.ExitCode.general_error),
-        .oom => return @intFromEnum(common.ExitCode.general_error),
+        .set1_invalid => return @backingInt(common.ExitCode.general_error),
+        .oom => return @backingInt(common.ExitCode.general_error),
     };
     var set1: []u8 = set1_built.set1;
     defer allocator.free(set1_built.raw);
@@ -729,8 +729,8 @@ fn runTrWithInput(
             stderr_writer,
         )) {
             .ok => |s| s,
-            .set2_invalid => return @intFromEnum(common.ExitCode.general_error),
-            .oom => return @intFromEnum(common.ExitCode.general_error),
+            .set2_invalid => return @backingInt(common.ExitCode.general_error),
+            .oom => return @backingInt(common.ExitCode.general_error),
         };
         set2_allocated = true;
     }
@@ -788,7 +788,7 @@ fn processTranslate(
 
     while (true) { // tiger:allow:unbounded-loop reads until readSliceShort returns 0 (EOF)
         const bytes_read = reader.readSliceShort(&buffer) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort never returns more than the destination length, so the
         // buffer[0..bytes_read] slice below is always in bounds.
@@ -797,12 +797,12 @@ fn processTranslate(
 
         for (buffer[0..bytes_read]) |b| {
             writer.writeByte(table[b]) catch {
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process: translate SET1->SET2 then squeeze repeated SET2 characters.
@@ -819,7 +819,7 @@ fn processTranslateSqueeze(
 
     while (true) { // tiger:allow:unbounded-loop reads until readSliceShort returns 0 (EOF)
         const bytes_read = reader.readSliceShort(&buffer) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort never returns more than the destination length, so the
         // buffer[0..bytes_read] slice below is always in bounds.
@@ -833,13 +833,13 @@ fn processTranslateSqueeze(
                 continue;
             }
             writer.writeByte(translated) catch {
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             last_byte = translated;
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process: delete characters in SET1.
@@ -853,7 +853,7 @@ fn processDelete(
 
     while (true) { // tiger:allow:unbounded-loop reads until readSliceShort returns 0 (EOF)
         const bytes_read = reader.readSliceShort(&buffer) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort never returns more than the destination length, so the
         // buffer[0..bytes_read] slice below is always in bounds.
@@ -863,13 +863,13 @@ fn processDelete(
         for (buffer[0..bytes_read]) |b| {
             if (!delete_set[b]) {
                 writer.writeByte(b) catch {
-                    return @intFromEnum(common.ExitCode.general_error);
+                    return @backingInt(common.ExitCode.general_error);
                 };
             }
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process: delete SET1 then squeeze SET2.
@@ -886,7 +886,7 @@ fn processDeleteSqueeze(
 
     while (true) { // tiger:allow:unbounded-loop reads until readSliceShort returns 0 (EOF)
         const bytes_read = reader.readSliceShort(&buffer) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort never returns more than the destination length, so the
         // buffer[0..bytes_read] slice below is always in bounds.
@@ -903,13 +903,13 @@ fn processDeleteSqueeze(
             }
 
             writer.writeByte(b) catch {
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             last_byte = b;
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process: squeeze repeated characters in SET1 (no translation).
@@ -924,7 +924,7 @@ fn processSqueeze(
 
     while (true) { // tiger:allow:unbounded-loop reads until readSliceShort returns 0 (EOF)
         const bytes_read = reader.readSliceShort(&buffer) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort never returns more than the destination length, so the
         // buffer[0..bytes_read] slice below is always in bounds.
@@ -936,13 +936,13 @@ fn processSqueeze(
                 continue;
             }
             writer.writeByte(b) catch {
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             last_byte = b;
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Print help message

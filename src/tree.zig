@@ -123,12 +123,12 @@ fn runTreeArena(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer gpa.free(parsed.positionals);
 
     if (parsed.help) {
         try printHelp(gpa, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (parsed.version) {
         try stdout_writer.print("{s} ({s}) {s}\n", .{
@@ -136,7 +136,7 @@ fn runTreeArena(
             common.name,
             common.version,
         });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     return runTreeConfigured(
         gpa,
@@ -168,7 +168,7 @@ fn runTreeConfigured(
             "invalid -L value",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     const color_when = parseWhenArg(parsed.color) catch {
         common.printErrorWithProgram(
@@ -178,7 +178,7 @@ fn runTreeConfigured(
             "invalid --color value",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     const icon_when = parseWhenArg(parsed.icons) catch {
         common.printErrorWithProgram(
@@ -188,7 +188,7 @@ fn runTreeConfigured(
             "invalid --icons value",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     var display = common.display_config.DisplayConfig.resolve(gpa);
     applyColorWhen(&display, color_when);
@@ -232,12 +232,12 @@ fn emitTrees(
         positionals;
     std.debug.assert(operands.len >= 1);
     var counts: Counts = .{};
-    var status: u8 = @intFromEnum(common.ExitCode.success);
+    var status: u8 = @backingInt(common.ExitCode.success);
     var style = try makeStyle(gpa, stdout_writer, display);
     for (operands) |operand| {
         if (operand.len == 0) {
             reportPathError(gpa, stderr_writer, operand, error.FileNotFound);
-            status = @intFromEnum(common.ExitCode.general_error);
+            status = @backingInt(common.ExitCode.general_error);
             continue;
         }
         const tree_status = emitOneOperand(
@@ -253,7 +253,7 @@ fn emitTrees(
             &counts,
         ) catch |err| {
             reportPathError(gpa, stderr_writer, operand, err);
-            status = @intFromEnum(common.ExitCode.general_error);
+            status = @backingInt(common.ExitCode.general_error);
             continue;
         };
         if (tree_status != 0) status = tree_status;
@@ -605,7 +605,7 @@ fn drainWalker(
     var n: u64 = 0;
     while (n < walk_calls_max) : (n += 1) {
         const maybe = walker.next(io) catch |err| {
-            status = @intFromEnum(common.ExitCode.general_error);
+            status = @backingInt(common.ExitCode.general_error);
             reportWalkerError(gpa, stderr_writer, walker, err);
             if (err == error.DepthLimitExceeded or err == error.EntryLimitExceeded) {
                 return status;
@@ -616,7 +616,7 @@ fn drainWalker(
         try consumeEntry(arena, walker, parents, walk_opts, entry, counts);
     }
     reportWalkerError(gpa, stderr_writer, walker, error.EntryLimitExceeded);
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 fn reportWalkerError(
@@ -938,7 +938,7 @@ fn printHelp(allocator: Allocator, writer: *std.Io.Writer) !void {
 }
 
 test "tree: test section begins" {
-    try testing.expectEqual(@as(u8, 0), @intFromEnum(common.ExitCode.success));
+    try testing.expectEqual(@as(u8, 0), @backingInt(common.ExitCode.success));
     try testing.expect(prog_name.len > 0);
 }
 

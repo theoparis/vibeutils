@@ -212,7 +212,7 @@ pub fn runLs(
             "argument parsing failed: {s}",
             .{common.posixErrorString(err)},
         );
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     };
     defer allocator.free(parsed.positionals);
 
@@ -289,7 +289,7 @@ fn lsMain(
 
 /// True when this invocation would emit color (so LS_COLORS is worth parsing).
 fn lsMain_colorWillEmit(color_mode: ColorMode) bool {
-    std.debug.assert(@intFromEnum(color_mode) <= @intFromEnum(ColorMode.never));
+    std.debug.assert(@backingInt(color_mode) <= @backingInt(ColorMode.never));
     if (color_mode == .never) return false;
     if (common.env.getEnv("NO_COLOR") != null) return false;
     if (color_mode == .auto) {
@@ -1620,7 +1620,7 @@ test "ls long symlink omits end sequence when ln=0 and fi=0 leave names uncolore
 fn testCreateLsAllocatedFile(io: std.Io, tmp_dir: *TestDir) ![]u8 {
     const file = try tmp_dir.dir().createFile(io, "allocated.bin", .{});
     defer file.close(io);
-    const data = [_]u8{'x'} ** 2048;
+    const data = @as([2048]u8, @splat('x'));
     try file.writeStreamingAll(io, &data);
     const one_hour_ago = common.file.currentTimestampNanoseconds() -
         3600 * @as(i128, std.time.ns_per_s);
@@ -1901,7 +1901,7 @@ test "ls -1S sorts distinct-size file operands largest first, ignoring argv orde
     {
         const file = try tmp_dir.dir().createFile(io, "z_big", .{});
         defer file.close(io);
-        const data = [_]u8{'X'} ** 1000;
+        const data = @as([1000]u8, @splat('X'));
         try file.writeStreamingAll(io, &data);
     }
 

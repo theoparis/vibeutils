@@ -205,7 +205,7 @@ fn validateOperandCount(
             "missing file operand",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     common.printErrorWithProgram(
         allocator,
@@ -214,7 +214,7 @@ fn validateOperandCount(
         "missing destination file operand after '{s}'",
         .{positionals[0]},
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// Run cp with provided writers for output
@@ -239,18 +239,18 @@ fn run(
         filtered_args.items,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(config.positionals);
 
     resolveConflicts(&config, args);
 
     if (config.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (config.version) {
         try stdout_writer.print("cp ({s}) {s}\n", .{ common.name, common.version });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate argument count
@@ -274,9 +274,9 @@ fn run(
     );
 
     return if (success)
-        @intFromEnum(common.ExitCode.success)
+        @backingInt(common.ExitCode.success)
     else
-        @intFromEnum(common.ExitCode.general_error);
+        @backingInt(common.ExitCode.general_error);
 }
 
 /// Resolve POSIX "last flag wins" for mutually exclusive options.
@@ -5630,7 +5630,7 @@ test "cp existing read-only destination hint follows stderr hint overlay" {
         .{dest_path},
     );
     defer testing.allocator.free(expected_plain);
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), plain_exit);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), plain_exit);
     try testing.expectEqualStrings(expected_plain, stderr_plain.writer.buffered());
 
     common.env.test_stderr_hints = true;
@@ -5650,7 +5650,7 @@ test "cp existing read-only destination hint follows stderr hint overlay" {
         .{dest_path},
     );
     defer testing.allocator.free(expected_hints);
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), hints_exit);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), hints_exit);
     try testing.expectEqualStrings(expected_hints, stderr_hints.writer.buffered());
 }
 
@@ -5671,7 +5671,7 @@ test "cp unreadable source appends readable-file hint" {
     try test_dir.createFile("source.txt", "secret", 0o644);
     const source_path = try test_dir.getPath("source.txt");
     defer testing.allocator.free(source_path);
-    const source_z = try testing.allocator.dupeZ(u8, source_path);
+    const source_z = try testing.allocator.dupeSentinel(u8, source_path, 0);
     defer testing.allocator.free(source_z);
     if (std.c.chmod(source_z, 0o000) != 0) return error.SkipZigTest;
     defer _ = std.c.chmod(source_z, 0o644);
@@ -5701,7 +5701,7 @@ test "cp unreadable source appends readable-file hint" {
     );
     defer testing.allocator.free(expected);
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expectEqualStrings(expected, stderr_aw.writer.buffered());
 }
 
@@ -5730,7 +5730,7 @@ test "cp absent destination under unwritable parent has no file hint" {
         .{parent_path},
     );
     defer testing.allocator.free(dest_path);
-    const parent_path_z = try testing.allocator.dupeZ(u8, parent_path);
+    const parent_path_z = try testing.allocator.dupeSentinel(u8, parent_path, 0);
     defer testing.allocator.free(parent_path_z);
     if (std.c.chmod(parent_path_z.ptr, 0o555) != 0) return error.SkipZigTest;
     defer _ = std.c.chmod(parent_path_z.ptr, 0o755);
@@ -5752,7 +5752,7 @@ test "cp absent destination under unwritable parent has no file hint" {
     );
     defer testing.allocator.free(expected);
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expectEqualStrings(expected, stderr_aw.writer.buffered());
     try testing.expect(std.mem.find(u8, stderr_aw.writer.buffered(), "(") == null);
 }

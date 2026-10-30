@@ -59,17 +59,17 @@ pub fn runTac(
         args,
         "tac",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     if (parsed.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.regex) {
@@ -80,7 +80,7 @@ pub fn runTac(
             "-r (--regex) is not supported",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const separator = parsed.separator orelse "\n";
@@ -150,9 +150,9 @@ fn runTacOnFiles(
     }
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Process a named file
@@ -173,7 +173,7 @@ fn runTacOnFile(
             "failed to open '{s}' for reading: {s}",
             .{ file_path, common.posixErrorString(err) },
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer file.close(io);
 
@@ -202,7 +202,7 @@ fn runTacOnInput(
     while (true) { // tiger:allow:unbounded-loop terminates at EOF (readSliceShort == 0 -> break)
         var chunk: [4096]u8 = undefined;
         const bytes_read = reader.readSliceShort(&chunk) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         // readSliceShort reads at most chunk.len bytes; guards the slice below.
         std.debug.assert(bytes_read <= chunk.len);
@@ -211,7 +211,7 @@ fn runTacOnInput(
     }
 
     if (content.items.len == 0) {
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // The empty-content early return above guarantees a non-empty buffer here.
@@ -227,7 +227,7 @@ fn runTacOnInput(
         try reverseByStringSeparator(allocator, content.items, separator, before, stdout_writer);
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Reverse records delimited by a single byte

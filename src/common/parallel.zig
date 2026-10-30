@@ -14,7 +14,7 @@ const n_jobs_max: u32 = std.math.maxInt(u32) - parallel_workers_max - 1;
 /// smaller because the error integer never fills its full 32-bit half.
 const error_slot_empty: u64 = std.math.maxInt(u64);
 
-const ErrorInt = std.meta.Int(.unsigned, @bitSizeOf(anyerror));
+const ErrorInt = @Int(.unsigned, @bitSizeOf(anyerror));
 
 /// State shared between the caller and every worker: the lock-free steal
 /// index and the packed lowest-failing-job error slot.

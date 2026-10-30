@@ -105,23 +105,23 @@ pub fn runChmod(
         parse_args,
         "chmod",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const positionals = parsed_args.positionals;
     const using_reference = parsed_args.reference != null;
     if (!try checkOperandCount(allocator, positionals, using_reference, stderr_writer)) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // With --reference, all args are files; otherwise the first is the mode.
@@ -135,15 +135,15 @@ pub fn runChmod(
 
     // --preserve-root: refuse to operate recursively on '/'.
     if (try preserveRootViolation(allocator, options, files, stderr_writer)) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     chmodFiles(io, allocator, mode_str, files, stdout_writer, stderr_writer, options) catch |err| {
         reportChmodFilesError(allocator, stderr_writer, err, options);
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Report a top-level chmodFiles failure. FileOperationFailed, InvalidMode, and
@@ -1021,11 +1021,11 @@ fn applyModeViaSyscall(file_path: []const u8, new_mode: u32, no_dereference: boo
         if (result == 0) return;
         const errno = c._errno().*;
         // EOPNOTSUPP is expected on many systems for symlink chmod; accept it.
-        if (errno == @intFromEnum(c.E.OPNOTSUPP)) return;
+        if (errno == @backingInt(c.E.OPNOTSUPP)) return;
         return switch (errno) {
-            @intFromEnum(c.E.NOENT) => error.FileNotFound,
-            @intFromEnum(c.E.ACCES) => error.PermissionDenied,
-            @intFromEnum(c.E.PERM) => error.PermissionDenied,
+            @backingInt(c.E.NOENT) => error.FileNotFound,
+            @backingInt(c.E.ACCES) => error.PermissionDenied,
+            @backingInt(c.E.PERM) => error.PermissionDenied,
             else => error.Unexpected,
         };
     }
@@ -1033,9 +1033,9 @@ fn applyModeViaSyscall(file_path: []const u8, new_mode: u32, no_dereference: boo
     if (result == 0) return;
     const errno = c._errno().*;
     return switch (errno) {
-        @intFromEnum(c.E.NOENT) => error.FileNotFound,
-        @intFromEnum(c.E.ACCES) => error.PermissionDenied,
-        @intFromEnum(c.E.PERM) => error.PermissionDenied,
+        @backingInt(c.E.NOENT) => error.FileNotFound,
+        @backingInt(c.E.ACCES) => error.PermissionDenied,
+        @backingInt(c.E.PERM) => error.PermissionDenied,
         else => error.Unexpected,
     };
 }
@@ -1088,7 +1088,7 @@ fn applyModeSpecToFile(
 /// Convert octal mode to string representation (e.g., "rwxr-xr-x")
 /// Handles special permission bits
 fn modeToString(mode: u32) [9]u8 {
-    var result = [_]u8{'-'} ** 9;
+    var result = @as([9]u8, @splat('-'));
 
     // User permissions
     if (mode & 0o400 != 0) result[0] = 'r';
@@ -1993,7 +1993,7 @@ test "chmod --preserve-root blocks recursive on /" {
         &stderr_aw.writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expect(std.mem.find(
         u8,
         stderr_aw.writer.buffered(),

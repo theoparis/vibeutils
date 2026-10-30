@@ -213,14 +213,14 @@ pub const FileInfo = struct {
 
     pub fn lstatDir(allocator: std.mem.Allocator, dir: std.Io.Dir, name: []const u8) !FileInfo {
         // Use lstat to get info about the link itself, not the target
-        const name_z = try allocator.dupeZ(u8, name);
+        const name_z = try allocator.dupeSentinel(u8, name, 0);
         defer allocator.free(name_z);
         return fstatatToFileInfo(dir.handle, name_z, .no_follow);
     }
 
     /// Get file info following symlinks, relative to a directory (like stat)
     pub fn statDir(allocator: std.mem.Allocator, dir: std.Io.Dir, name: []const u8) !FileInfo {
-        const name_z = try allocator.dupeZ(u8, name);
+        const name_z = try allocator.dupeSentinel(u8, name, 0);
         defer allocator.free(name_z);
         return fstatatToFileInfo(dir.handle, name_z, .follow);
     }
@@ -601,9 +601,9 @@ pub fn formatTime(mtime_ns: i128, buf: []u8) ![]const u8 {
     };
 
     // Month enum is Jan=1..Dec=12; bound the index into the 12-element array.
-    std.debug.assert(@intFromEnum(month_day.month) >= 1);
-    std.debug.assert(@intFromEnum(month_day.month) <= 12);
-    const month = months[@intFromEnum(month_day.month) - 1];
+    std.debug.assert(@backingInt(month_day.month) >= 1);
+    std.debug.assert(@backingInt(month_day.month) <= 12);
+    const month = months[@backingInt(month_day.month) - 1];
     const day = month_day.day_index + 1;
     const year = year_day.year;
     const hour = day_seconds.getHoursIntoDay();

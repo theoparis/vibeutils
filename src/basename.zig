@@ -66,7 +66,7 @@ pub fn runBasename(
                     "unrecognized option",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.MissingValue => {
                 common.printErrorWithProgram(
@@ -76,7 +76,7 @@ pub fn runBasename(
                     "option missing required argument",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.InvalidValue => {
                 common.printErrorWithProgram(
@@ -86,7 +86,7 @@ pub fn runBasename(
                     "invalid option value",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             else => return err,
         }
@@ -96,19 +96,19 @@ pub fn runBasename(
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate arguments
     if (parsed_args.positionals.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, "basename", "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     // The length-0 case returned above, so at least one operand is guaranteed
     // here; this is the precondition for the positionals[0]/[2] indexing below.
@@ -141,7 +141,7 @@ fn runBasenameProcess(
                 "extra operand '{s}'",
                 .{parsed_args.positionals[2]},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
         // The len > 2 case returned above; combined with len >= 1 this puts the
         // count in {1,2}, justifying positionals[0] and the guarded [1] access.
@@ -155,7 +155,7 @@ fn runBasenameProcess(
         try writeOutput(stdout_writer, result, parsed_args.zero);
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 pub fn main(init: std.process.Init) !void {

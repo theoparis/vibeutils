@@ -270,8 +270,8 @@ const LongOptionResult = enum { consumed_ok, consumed_error, not_mine };
 /// Handle boolean and mode long options (the `eql` arms). Returns true when
 /// `flag` was recognized and applied.
 fn parseArgs_longFlag(opts: *GrepOptions, flag: []const u8) bool {
-    assert(@intFromEnum(opts.regex_mode) <= @intFromEnum(RegexMode.fixed));
-    assert(@intFromEnum(opts.regex_mode) >= @intFromEnum(RegexMode.basic));
+    assert(@backingInt(opts.regex_mode) <= @backingInt(RegexMode.fixed));
+    assert(@backingInt(opts.regex_mode) >= @backingInt(RegexMode.basic));
     if (std.mem.eql(u8, flag, "help")) {
         opts.help = true;
     } else if (std.mem.eql(u8, flag, "version")) {
@@ -391,8 +391,8 @@ fn parseArgs_longValued(
     flag: []const u8,
     stderr_writer: *std.Io.Writer,
 ) !LongOptionResult {
-    assert(@intFromEnum(opts.regex_mode) <= @intFromEnum(RegexMode.fixed));
-    assert(@intFromEnum(opts.regex_mode) >= @intFromEnum(RegexMode.basic));
+    assert(@backingInt(opts.regex_mode) <= @backingInt(RegexMode.fixed));
+    assert(@backingInt(opts.regex_mode) >= @backingInt(RegexMode.basic));
     if (std.mem.startsWith(u8, flag, "regexp=")) {
         opts.pattern_source_given = true;
         try opts.patterns.append(allocator, flag["regexp=".len..]);
@@ -1127,7 +1127,7 @@ fn translateGnuEscapes(
     mode: RegexMode,
 ) ?TranslatedPattern {
     assert(mode != .fixed);
-    assert(@intFromEnum(mode) <= @intFromEnum(RegexMode.extended));
+    assert(@backingInt(mode) <= @backingInt(RegexMode.extended));
     if (mode == .basic and breHasTopLevelAlternation(pattern)) {
         const ere = transpileBreToEre(allocator, pattern) orelse return null;
         defer allocator.free(ere);
@@ -1176,7 +1176,7 @@ fn compilePattern(
     opts: *const GrepOptions,
     stderr_writer: *std.Io.Writer,
 ) ?CompiledPattern {
-    assert(@intFromEnum(opts.regex_mode) <= @intFromEnum(RegexMode.fixed));
+    assert(@backingInt(opts.regex_mode) <= @backingInt(RegexMode.fixed));
     if (opts.regex_mode == .fixed) {
         if (opts.ignore_case) {
             const lower = toLower(allocator, pattern) catch return null;
@@ -1216,7 +1216,7 @@ fn compilePattern(
     // Use REG_NOSUB only if we don't need match positions
     if (!opts.only_matching and !opts.word_regexp and opts.color == .off) cflags |= rf.nosub;
 
-    const pattern_z = allocator.dupeZ(u8, actual_pattern) catch return null;
+    const pattern_z = allocator.dupeSentinel(u8, actual_pattern, 0) catch return null;
     defer allocator.free(pattern_z);
 
     const regex = regex_c.regex_heap_alloc() orelse return null;
@@ -1379,7 +1379,7 @@ fn matchLine_regexWord(
     var eff_prev_char = prev_char;
     while (search_start <= line.len) {
         const search_line = line[search_start..];
-        const search_z = allocator.dupeZ(u8, search_line) catch return .{ .matched = false };
+        const search_z = allocator.dupeSentinel(u8, search_line, 0) catch return .{ .matched = false };
         defer allocator.free(search_z);
         var pmatch: [1]c.regmatch_t = undefined;
         var eflags: c_int = 0;
@@ -1409,7 +1409,7 @@ fn matchLine_regexWord(
 /// Plain regex match (no word boundaries).
 fn matchLine_regexPlain(re: *c.regex_t, line: []const u8, allocator: Allocator) MatchResult {
     assert(@intFromPtr(re) != 0);
-    const line_z = allocator.dupeZ(u8, line) catch return .{ .matched = false };
+    const line_z = allocator.dupeSentinel(u8, line, 0) catch return .{ .matched = false };
     defer allocator.free(line_z);
     var pmatch: [1]c.regmatch_t = undefined;
     const exec_result_val = c.regexec(re, line_z.ptr, 1, &pmatch, 0);
@@ -2473,8 +2473,8 @@ pub fn runGrep(
     stderr_writer: *std.Io.Writer,
 ) anyerror!u8 {
     var opts = (parseArgs(allocator, io, args, stderr_writer) catch {
-        return @intFromEnum(common.ExitCode.serious_error);
-    }) orelse return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
+    }) orelse return @backingInt(common.ExitCode.serious_error);
     defer opts.deinit(allocator);
 
     // Handle --help/--version and the no-pattern error before searching.
@@ -2490,7 +2490,7 @@ pub fn runGrep(
     }
 
     (runGrep_compilePatterns(allocator, &opts, &compiled, stderr_writer)) orelse {
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     };
     assert(compiled.items.len == opts.patterns.items.len);
 
@@ -2542,11 +2542,11 @@ fn runGrep_earlyExit(
 ) ?u8 {
     if (opts.help) {
         printHelp(allocator, stdout_writer) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (opts.version) {
         printVersion(stdout_writer) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (opts.patterns.items.len == 0 and !opts.pattern_source_given) {
         // GNU's missing-operand shape is a Usage line, not `grep: msg`
@@ -2555,14 +2555,14 @@ fn runGrep_earlyExit(
             "Usage: grep [OPTION]... PATTERNS [FILE]...\n" ++
                 "Try 'grep --help' for more information.\n",
         ) catch {};
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     }
     // An empty pattern set can never match, so GNU exits 1 without opening any
     // operand. -v and -L still walk the files, so they take the normal path.
     if (opts.patterns.items.len == 0 and !opts.invert_match and !opts.files_without_match) {
         assert(opts.pattern_source_given);
         assert(!opts.help);
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     return null;
 }
@@ -4860,7 +4860,7 @@ test "walker-migration: unreadable directory is reported to stderr and walk cont
 
     const locked_abs = try tmp_dir.getPath("locked");
     defer testing.allocator.free(locked_abs);
-    const locked_z = try testing.allocator.dupeZ(u8, locked_abs);
+    const locked_z = try testing.allocator.dupeSentinel(u8, locked_abs, 0);
     defer testing.allocator.free(locked_z);
 
     // Remove all permissions on the directory so its iteration fails.
@@ -4921,7 +4921,7 @@ fn issue58BuildLockedTree(tmp_dir: *TestDir) ![:0]u8 {
 
     const locked_abs = try tmp_dir.getPath("locked");
     defer testing.allocator.free(locked_abs);
-    const locked_z = try testing.allocator.dupeZ(u8, locked_abs);
+    const locked_z = try testing.allocator.dupeSentinel(u8, locked_abs, 0);
     errdefer testing.allocator.free(locked_z);
 
     if (std.c.chmod(locked_z.ptr, 0o000) != 0) return error.SkipZigTest;

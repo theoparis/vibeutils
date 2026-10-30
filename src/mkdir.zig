@@ -63,31 +63,31 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Check if we have directories to create
     const dirs = parsed_args.positionals;
     if (dirs.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, prog_name, "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Build options from parsed flags, parsing -m mode if present.
     const options = run_buildOptions(allocator, parsed_args, prog_name, stderr_writer) catch {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
     // Process directories - continue processing even if some fail
@@ -111,7 +111,7 @@ fn run(
         };
     }
 
-    return @intFromEnum(exit_code);
+    return @backingInt(exit_code);
 }
 
 /// Build MkdirOptions from parsed flags, parsing the -m mode string if present.

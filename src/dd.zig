@@ -417,7 +417,7 @@ const ebcdic_to_ascii = invertTable(ascii_to_ebcdic);
 
 fn invertTable(forward: [256]u8) [256]u8 {
     @setEvalBranchQuota(1000);
-    var table: [256]u8 = [_]u8{0} ** 256;
+    var table: [256]u8 = @as([256]u8, @splat(0));
     for (0..256) |i| {
         table[forward[i]] = @intCast(i);
     }
@@ -767,7 +767,7 @@ fn runDd_validateConfig(allocator: Allocator, stderr: *std.Io.Writer, config: *c
     if (config.conv_lcase and config.conv_ucase) {
         const message = "conv=lcase and conv=ucase are mutually exclusive";
         common.printErrorWithProgram(allocator, stderr, "dd", "{s}", .{message});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // ascii, ebcdic, and ibm are mutually exclusive
@@ -779,24 +779,24 @@ fn runDd_validateConfig(allocator: Allocator, stderr: *std.Io.Writer, config: *c
     if (charset_count > 1) {
         const message = "conv=ascii, conv=ebcdic, and conv=ibm are mutually exclusive";
         common.printErrorWithProgram(allocator, stderr, "dd", "{s}", .{message});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // block and unblock are mutually exclusive
     if (config.conv_block and config.conv_unblock) {
         const message = "conv=block and conv=unblock are mutually exclusive";
         common.printErrorWithProgram(allocator, stderr, "dd", "{s}", .{message});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // block and unblock require cbs
     if ((config.conv_block or config.conv_unblock) and config.cbs == null) {
         const message = "conv=block/unblock requires cbs operand";
         common.printErrorWithProgram(allocator, stderr, "dd", "{s}", .{message});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Allocate the input and output working buffers. Returns the buffers
@@ -819,7 +819,7 @@ fn runDd_allocBuffers(
             "failed to allocate input buffer",
             .{},
         );
-        return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .fatal = @backingInt(common.ExitCode.general_error) };
     };
     const out_buf = allocator.alloc(u8, obs) catch {
         allocator.free(in_buf);
@@ -830,7 +830,7 @@ fn runDd_allocBuffers(
             "failed to allocate output buffer",
             .{},
         );
-        return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .fatal = @backingInt(common.ExitCode.general_error) };
     };
     // Postcondition: a successful alloc returns a slice of exactly the
     // requested length, so the buffers match the requested block sizes.
@@ -859,13 +859,13 @@ fn runDd_openFiles(
                 "failed to open '{s}': {s}",
                 .{ path, message },
             );
-            return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+            return .{ .fatal = @backingInt(common.ExitCode.general_error) };
         };
     } else std.Io.File.stdin();
 
     // Open output
     const output_file: std.Io.File = if (config.output_file) |path| blk: {
-        const flags: std.Io.File.CreateFlags = .{
+        const flags: std.Io.Dir.CreateFileOptions = .{
             .truncate = !config.conv_notrunc,
         };
         break :blk std.Io.Dir.cwd().createFile(io, path, flags) catch |err| {
@@ -880,7 +880,7 @@ fn runDd_openFiles(
                 "failed to open '{s}': {s}",
                 .{ path, message },
             );
-            return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+            return .{ .fatal = @backingInt(common.ExitCode.general_error) };
         };
     } else std.Io.File.stdout();
 
@@ -914,13 +914,13 @@ fn runDd_skipInput(
                     "error skipping input: {s}",
                     .{message},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
         };
     }
     // The loop stops at skipped == skip_blocks, or breaks earlier on EOF.
     std.debug.assert(skipped <= skip_blocks);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Seek the output forward by exactly `seek_bytes` bytes. Falls back to
@@ -953,14 +953,14 @@ fn runDd_seekOutput(
                     "error seeking output: {s}",
                     .{message},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             remaining -= chunk;
         }
         // The fallback loop decrements remaining to zero without overrun.
         std.debug.assert(remaining == 0);
     };
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Skip exactly `skip_bytes` bytes at the start of the input by seeking,
@@ -979,7 +979,7 @@ fn runDd_skipInputBytes(
     std.debug.assert(in_buf.len > 0);
 
     if (io.vtable.fileSeekBy(io.userdata, input_file, @intCast(skip_bytes))) |_| {
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     } else |_| {}
 
     var remaining = skip_bytes; // tiger:allow:usize-arch byte count uses slice index type
@@ -996,14 +996,14 @@ fn runDd_skipInputBytes(
                     "error skipping input: {s}",
                     .{message},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
         };
         if (n == 0) break;
         remaining -= n;
     }
     std.debug.assert(remaining <= skip_bytes);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Apply the skip= and seek= operands, in that order, by delegating to
@@ -1029,7 +1029,7 @@ fn runDd_skipAndSeek(
             runDd_skipInputBytes(allocator, io, stderr, input, bufs.in_buf, config.skip)
         else
             runDd_skipInput(allocator, io, stderr, input, bufs.in_buf, config.skip);
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
     }
     if (config.seek > 0) {
         const output = files.output_file;
@@ -1038,9 +1038,9 @@ fn runDd_skipAndSeek(
         // obs-sized blocks (seek * obs bytes).
         const seek_bytes = if (config.seek_bytes) config.seek else config.seek * obs;
         const code = runDd_seekOutput(allocator, io, stderr, output, out_buf, seek_bytes);
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Allocate the conv=block conversion buffer when conv=block is active.
@@ -1052,12 +1052,12 @@ fn runDd_allocCbs(
     need_cbs: bool,
     cbs: usize, // tiger:allow:usize-arch byte count uses slice index type
 ) DdCbsResult {
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) == 1);
+    std.debug.assert(@backingInt(common.ExitCode.general_error) == 1);
 
     if (!need_cbs) return .{ .buffer = null };
     const cbs_buf = allocator.alloc(u8, cbs) catch {
         common.printErrorWithProgram(allocator, stderr, "dd", "failed to allocate cbs buffer", .{});
-        return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .fatal = @backingInt(common.ExitCode.general_error) };
     };
     // Postcondition: a successful alloc returns exactly cbs bytes.
     std.debug.assert(cbs_buf.len == cbs);
@@ -1102,7 +1102,7 @@ fn runDd_handleReadError(
                 ctx.output_file.writeStreamingAll(ctx.io, in_buf) catch |werr| {
                     const write_message = common.posixErrorString(werr);
                     ddNote(ctx, "write error: {s}", .{write_message});
-                    return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+                    return .{ .fatal = @backingInt(common.ExitCode.general_error) };
                 };
                 ctx.stats.full_blocks_out += 1;
                 ctx.stats.bytes_copied += ibs;
@@ -1114,19 +1114,19 @@ fn runDd_handleReadError(
     const read_message = common.posixErrorString(err);
     ddNote(ctx, "read error: {s}", .{read_message});
     printStats(ctx.io, ctx.stderr, ctx.stats.*, ctx.status);
-    return .{ .fatal = @intFromEnum(common.ExitCode.general_error) };
+    return .{ .fatal = @backingInt(common.ExitCode.general_error) };
 }
 
 /// Report a write failure the way every copy-loop and flush write does:
 /// print the OS error, emit transfer stats, and yield the general-error
 /// exit code. Centralizes the repeated catch arm without changing it.
 fn runDd_writeError(ctx: *const DdWriteCtx, err: anyerror) u8 {
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) == 1);
+    std.debug.assert(@backingInt(common.ExitCode.general_error) == 1);
 
     const message = common.posixErrorString(err);
     ddNote(ctx, "write error: {s}", .{message});
     printStats(ctx.io, ctx.stderr, ctx.stats.*, ctx.status);
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// Process one converted data block under conv=block: emit cbs-sized,
@@ -1165,7 +1165,7 @@ fn runDd_writeBlockRecord(
             }
         }
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process one converted data block under conv=unblock: split it into
@@ -1212,7 +1212,7 @@ fn runDd_writeUnblockRecords(
     // Loop invariant: each step advances data_pos by at most the bytes
     // remaining, so it never runs past the end of the data slice.
     std.debug.assert(data_pos <= data.len);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Write one converted block in simple-copy mode: each input block is
@@ -1252,7 +1252,7 @@ fn runDd_writeSimpleBlock(
             ctx.stats.partial_blocks_out += 1;
         }
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Write one converted block in buffered mode: accumulate into out_buf
@@ -1293,7 +1293,7 @@ fn runDd_writeBufferedBlock(
     // Loop invariant: data_pos advances by at most the bytes remaining,
     // so it never runs past the end of the data slice.
     std.debug.assert(data_pos <= data.len);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Flush the conv=block tail: a partial record left without a trailing
@@ -1318,7 +1318,7 @@ fn runDd_flushTails_block(
     };
     ctx.stats.bytes_copied += cbs;
     ctx.stats.partial_blocks_out += 1;
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Flush the conv=unblock tail: the partial record is space-stripped
@@ -1342,7 +1342,7 @@ fn runDd_flushTails_unblock(
     };
     ctx.stats.bytes_copied += end + 1;
     ctx.stats.partial_blocks_out += 1;
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Flush the generic output buffer tail (non-simple, non-block,
@@ -1376,7 +1376,7 @@ fn runDd_flushTails_buffer(
         ctx.stats.partial_blocks_out += 1;
         ctx.stats.bytes_copied += out_pos;
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// True when `key` names an operand whose value is a multiplicative
@@ -1428,7 +1428,7 @@ pub fn runDd(
     if (findUnsupportedOperand(args)) |name| {
         const message = "unsupported operand '{s}' (not implemented)";
         common.printErrorWithProgram(allocator, stderr, "dd", message, .{name});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const config = parseOperands(args) catch |err| {
@@ -1459,17 +1459,17 @@ pub fn runDd(
                 runDd_printUnknownOperand(allocator, stderr, args);
             },
         }
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
     if (config.help) {
         printHelp(allocator, stdout) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (config.version) {
         printVersion(stdout) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // GNU's zero-multiplier warning: a bare "0" factor (e.g. count=0x10)
@@ -1587,10 +1587,10 @@ fn runDd_copy(
     config: *const DdConfig,
 ) u8 {
     const validate_code = runDd_validateConfig(allocator, stderr, config);
-    if (validate_code != @intFromEnum(common.ExitCode.success)) return validate_code;
+    if (validate_code != @backingInt(common.ExitCode.success)) return validate_code;
 
     const sizes = runDd_blockSizes(allocator, stderr, config) orelse
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     const ibs = sizes.ibs;
     const obs = sizes.obs;
 
@@ -1609,7 +1609,7 @@ fn runDd_copy(
     defer if (config.output_file != null) files.output_file.close(io);
 
     const ss_code = runDd_skipAndSeek(allocator, io, stderr, files, bufs, config, obs);
-    if (ss_code != @intFromEnum(common.ExitCode.success)) return ss_code;
+    if (ss_code != @backingInt(common.ExitCode.success)) return ss_code;
 
     const cbs = config.cbs orelse 0;
     const cbs_buf = switch (runDd_allocCbs(allocator, stderr, config.conv_block, cbs)) {
@@ -1643,7 +1643,7 @@ fn runDd_copy(
     var positions = DdPositions{};
 
     const loop_code = runDd_copyLoop(&ctx, config, &plan, &positions);
-    if (loop_code != @intFromEnum(common.ExitCode.success)) return loop_code;
+    if (loop_code != @backingInt(common.ExitCode.success)) return loop_code;
 
     return runDd_finish(&ctx, config, &plan, &positions);
 }
@@ -1690,7 +1690,7 @@ fn runDd_advanceAfterReadError(
                 .{},
             );
             printStats(ctx.io, ctx.stderr, ctx.stats.*, ctx.status);
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
         return null;
     } else |_| {
@@ -1706,7 +1706,7 @@ fn runDd_advanceAfterReadError(
                 .{},
             );
             printStats(ctx.io, ctx.stderr, ctx.stats.*, ctx.status);
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
         return null;
     }
@@ -1850,10 +1850,10 @@ fn runDd_copyLoop(
         applyConversions(data, config.*);
 
         const code = runDd_copyLoop_dispatch(ctx, config, plan, data, positions);
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
         runDd_updateProgress(ctx);
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Dispatch one converted block to the matching write mode, mutating
@@ -1908,13 +1908,13 @@ fn runDd_finish(
             positions.cbs_pos,
             config.fillchar,
         );
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
     }
 
     // Flush remaining data for conv=unblock (partial record)
     if (config.conv_unblock and positions.unblock_pos > 0) {
         const code = runDd_flushTails_unblock(ctx, plan.out_buf, positions.unblock_pos);
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
     }
 
     // Flush remaining data in output buffer (non-simple mode, non-block/unblock)
@@ -1927,7 +1927,7 @@ fn runDd_finish(
             positions.out_pos,
             config.conv_osync,
         );
-        if (code != @intFromEnum(common.ExitCode.success)) return code;
+        if (code != @backingInt(common.ExitCode.success)) return code;
     }
 
     // The copy loop updates the live line only after each read; a short
@@ -1937,7 +1937,7 @@ fn runDd_finish(
 
     // Sync the output file if conv=fsync or conv=fdatasync was requested.
     const sync_code = runDd_finish_sync(ctx, config);
-    if (sync_code != @intFromEnum(common.ExitCode.success)) return sync_code;
+    if (sync_code != @backingInt(common.ExitCode.success)) return sync_code;
 
     // Finish a shown live line first: GNU ends the progress line with a
     // newline and then prints the records/transfer stats again (the GNU
@@ -1946,7 +1946,7 @@ fn runDd_finish(
 
     // Print statistics
     printStats(ctx.io, ctx.stderr, ctx.stats.*, config.status);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Flush the output file to disk for conv=fsync and/or conv=fdatasync.
@@ -1964,7 +1964,7 @@ fn runDd_finish(
 fn runDd_finish_sync(ctx: *const DdWriteCtx, config: *const DdConfig) u8 {
     const want_full = config.conv_fsync;
     const want_data = config.conv_fdatasync;
-    if (!want_full and !want_data) return @intFromEnum(common.ExitCode.success);
+    if (!want_full and !want_data) return @backingInt(common.ExitCode.success);
 
     const fd = ctx.output_file.handle;
     const target = config.output_file orelse "standard output";
@@ -1975,7 +1975,7 @@ fn runDd_finish_sync(ctx: *const DdWriteCtx, config: *const DdConfig) u8 {
         // The fdatasync(2) path is reachable on Linux alone.
         std.debug.assert(builtin.os.tag == .linux);
         switch (std.posix.errno(std.posix.system.fdatasync(fd))) {
-            .SUCCESS => return @intFromEnum(common.ExitCode.success),
+            .SUCCESS => return @backingInt(common.ExitCode.success),
             // No fdatasync for this fd/filesystem: fall through to fsync.
             .INVAL, .NOSYS => {},
             else => |err| return runDd_finish_sync_fail(ctx, "fdatasync", target, err),
@@ -1984,7 +1984,7 @@ fn runDd_finish_sync(ctx: *const DdWriteCtx, config: *const DdConfig) u8 {
 
     // Full fsync: conv=fsync, the fdatasync fallback, or non-Linux fdatasync.
     switch (std.posix.errno(std.posix.system.fsync(fd))) {
-        .SUCCESS => return @intFromEnum(common.ExitCode.success),
+        .SUCCESS => return @backingInt(common.ExitCode.success),
         else => |err| return runDd_finish_sync_fail(ctx, "fsync", target, err),
     }
 }
@@ -2003,7 +2003,7 @@ fn runDd_finish_sync_fail(
 
     const detail = runDd_finish_sync_errnoString(err);
     ddNote(ctx, "{s} failed for '{s}': {s}", .{ op, target, detail });
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// Human-readable text for the errno values an output sync can report, so
@@ -2410,7 +2410,7 @@ test "runDd - copy with count" {
     defer tmp_dir.deinit();
 
     // Create a file with multiple 512-byte blocks worth of data
-    const data = "ABCDEFGHIJ" ** 52; // 520 bytes > 1 block
+    const data = repeatBytes("ABCDEFGHIJ", 52); // 520 bytes > 1 block
     try tmp_dir.createFile("input.txt", data, null);
 
     const input_path = try tmp_dir.getPath("input.txt");
@@ -2782,7 +2782,7 @@ test "runDd status=progress mid-helper write success leaves progress stale" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(common.ExitCode.general_error), exit_code);
+    try testing.expectEqual(@backingInt(common.ExitCode.general_error), exit_code);
 
     const output = stderr_aw.writer.buffered();
     try testing.expect(std.mem.find(u8, output, "write error") != null);
@@ -2828,7 +2828,7 @@ test "runDd write errors begin after a shown progress line" {
 
     const exit_code = runDd_writeError(&ctx, error.NoSpaceLeft);
 
-    try testing.expectEqual(@intFromEnum(common.ExitCode.general_error), exit_code);
+    try testing.expectEqual(@backingInt(common.ExitCode.general_error), exit_code);
     try testing.expect(std.mem.find(
         u8,
         stderr_aw.writer.buffered(),
@@ -3331,7 +3331,7 @@ test "runDd - count byte suffixes bound the copy in exact bytes independent of b
     defer tmp_dir.deinit();
 
     // 1200 bytes: "0123456789" repeated 120 times.
-    const data = "0123456789" ** 120;
+    const data = repeatBytes("0123456789", 120);
     try tmp_dir.createFile("input.txt", data, null);
 
     const input_path = try tmp_dir.getPath("input.txt");
@@ -3450,7 +3450,7 @@ test "runDd - count=2b with no trailing B stays a block-count multiplier (issue 
     var tmp_dir = TestDir.init(testing.allocator);
     defer tmp_dir.deinit();
 
-    const data = "ABCDEFGHIJ" ** 400; // exactly 4000 bytes
+    const data = repeatBytes("ABCDEFGHIJ", 400); // exactly 4000 bytes
     try tmp_dir.createFile("input.txt", data, null);
 
     const input_path = try tmp_dir.getPath("input.txt");
@@ -3540,7 +3540,7 @@ test "runDd - skip and seek with byte suffix kB position by exact byte offset (i
     // writes one 100-byte block -> total output size 1100 bytes, with
     // the source content landing at the tail.
     {
-        const seek_data = "X" ** 100;
+        const seek_data = repeatBytes("X", 100);
         try tmp_dir.createFile("seek_input.bin", seek_data, null);
         const seek_input_path = try tmp_dir.getPath("seek_input.bin");
         defer testing.allocator.free(seek_input_path);
@@ -3594,7 +3594,7 @@ test "runDd - bs with byte suffix kB produces 1000-byte records (issue #65)" {
     var tmp_dir = TestDir.init(testing.allocator);
     defer tmp_dir.deinit();
 
-    const data = "ABCDEFGHIJ" ** 400; // exactly 4000 bytes
+    const data = repeatBytes("ABCDEFGHIJ", 400); // exactly 4000 bytes
     try tmp_dir.createFile("input.txt", data, null);
 
     const input_path = try tmp_dir.getPath("input.txt");
@@ -4650,7 +4650,7 @@ test "stall bound aborts when seek cannot advance" {
 
     // The bound fires, returning a fatal general_error exit code...
     try testing.expect(result != null);
-    try testing.expectEqual(@intFromEnum(common.ExitCode.general_error), result.?);
+    try testing.expectEqual(@backingInt(common.ExitCode.general_error), result.?);
     // ...exactly at the dd_read_error_stall_max'th consecutive stall...
     try testing.expectEqual(dd_read_error_stall_max, read_errors_stalled);
     try testing.expectEqual(dd_read_error_stall_max, calls + 1);
@@ -4719,7 +4719,7 @@ test "skip bound aborts a seekable input that never reads" {
     // The large skip bound fires, returning a fatal general_error exit
     // code...
     try testing.expect(result != null);
-    try testing.expectEqual(@intFromEnum(common.ExitCode.general_error), result.?);
+    try testing.expectEqual(@backingInt(common.ExitCode.general_error), result.?);
     // ...exactly at the dd_read_error_skip_max'th consecutive skipped
     // block...
     try testing.expectEqual(dd_read_error_skip_max, read_errors_stalled);
@@ -5140,4 +5140,16 @@ test "runDd #178: -- then empty operand is unrecognized" {
         stderr_aw.writer.buffered(),
         "unrecognized operand ''",
     ) != null);
+}
+
+/// Repeat `pattern` `count` times at comptime. Replaces the removed `**`
+/// array-repeat operator from earlier Zig versions.
+fn repeatBytes(comptime pattern: []const u8, comptime count: usize) *const [pattern.len * count]u8 {
+    @setEvalBranchQuota(pattern.len * count + 1024);
+    const result = comptime blk: {
+        var r: [pattern.len * count]u8 = undefined;
+        for (&r, 0..) |*byte, i| byte.* = pattern[i % pattern.len];
+        break :blk r;
+    };
+    return &result;
 }

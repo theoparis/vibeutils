@@ -1445,7 +1445,7 @@ fn run_validateOperandCount(
             "missing file operand\nTry '{s} --help' for more information.",
             .{prog_name},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     if (files.len == 1) {
         common.printErrorWithProgram(
@@ -1455,7 +1455,7 @@ fn run_validateOperandCount(
             "missing destination file operand after '{s}'\nTry '{s} --help' for more information.",
             .{ files[0], prog_name },
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     return null;
 }
@@ -1476,19 +1476,19 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try stdout_writer.print("mv ({s}) {s}\n", .{ common.name, common.version });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const files = parsed_args.positionals;
@@ -1601,7 +1601,7 @@ fn run_moveMultipleSources(
                     "target '{s}' is not a directory",
                     .{dest},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             else => return err,
         };
@@ -1614,7 +1614,7 @@ fn run_moveMultipleSources(
             "target '{s}' is not a directory",
             .{dest},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Move each source to destination directory
@@ -1642,7 +1642,7 @@ fn run_moveMultipleSources(
             try stdout_writer.print("'{s}' -> '{s}'\n", .{ source, full_dest });
         }
     }
-    return @intFromEnum(exit_code);
+    return @backingInt(exit_code);
 }
 
 /// Move a single source to its destination: simple rename, move-into-directory,
@@ -1729,13 +1729,13 @@ fn run_moveSingleSource_attempt(
         stderr_writer,
         hinted_overwrite,
     ) catch {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
     if (options.verbose) {
         try stdout_writer.print("'{s}' -> '{s}'\n", .{ source, dest });
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 test "mv: force overwrite existing file on same filesystem" {

@@ -143,7 +143,7 @@ pub fn runWc(
         args,
         "wc",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(options.positionals);
 
     if (options.help) {
@@ -165,7 +165,7 @@ pub fn runWc(
             "libxo output is not supported",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // GNU wc: -c and -m are NOT mutually exclusive.
@@ -184,7 +184,7 @@ pub fn runWc(
                     "Valid arguments are: 'always', 'auto', 'never'",
                 .{opts.color orelse ""},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
     };
 

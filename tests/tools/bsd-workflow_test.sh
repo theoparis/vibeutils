@@ -182,7 +182,7 @@ require_job_text netbsd \
     "netbsd job does not extract the Zig tarball with tar -xf" \
     "tar -xf"
 
-require_text "workflow does not install Zig 0.16.0" "0.16.0"
+require_text "workflow does not install Zig 0.17.0" "0.17.0"
 require_text "workflow does not use an Ubuntu host runner" \
     "runs-on: ubuntu-latest"
 

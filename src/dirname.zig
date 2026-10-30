@@ -46,7 +46,7 @@ pub fn runDirname(
                     "unrecognized option",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.MissingValue => {
                 common.printErrorWithProgram(
@@ -56,7 +56,7 @@ pub fn runDirname(
                     "option missing required argument",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.InvalidValue => {
                 common.printErrorWithProgram(
@@ -66,7 +66,7 @@ pub fn runDirname(
                     "invalid option value",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             else => return err,
         }
@@ -75,17 +75,17 @@ pub fn runDirname(
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try stdout_writer.print("dirname ({s}) {s}\n", .{ common.name, common.version });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.positionals.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, "dirname", "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const separator: u8 = if (parsed_args.zero) '\x00' else '\n';
@@ -99,7 +99,7 @@ pub fn runDirname(
         try stdout_writer.print("{s}{c}", .{ dirname, separator });
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Extract directory portion from pathname according to POSIX dirname specification

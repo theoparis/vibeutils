@@ -15,17 +15,30 @@ const prog_name = "free";
 // Platform-specific memory information
 // ============================================================================
 
-// sysctl and getpagesize come from clean libc headers. The mach headers
-// (mach/mach.h, mach/mach_host.h) are deliberately NOT imported here: Zig
-// 0.16's translate-c cannot size the mach_msg_*_descriptor_t bitfield/union
-// types in the macOS 26 SDK, marking them "uninstantiable" and failing the
-// @cImport with "struct changed size unexpectedly" (issue #40). We only need
-// a handful of mach calls, so we hand-write extern declarations below. These
-// are stable kernel ABI and portable across SDK churn.
-const c = @cImport({
-    @cInclude("sys/sysctl.h");
-    @cInclude("unistd.h");
-});
+// sysctl and getpagesize come from libc. Zig 0.17 removed @cImport, so the
+// handful of C declarations this utility needs are hand-written below. The
+// mach headers (mach/mach.h, mach/mach_host.h) are deliberately NOT imported:
+// translate-c cannot size the mach_msg_*_descriptor_t bitfield/union types in
+// the macOS 26 SDK, marking them "uninstantiable" and failing with "struct
+// changed size unexpectedly" (issue #40). These are stable kernel ABI and
+// portable across SDK churn.
+const c = struct {
+    const CTL_HW: c_int = 6;
+    const HW_MEMSIZE: c_int = 24;
+    const CTL_VM: c_int = 2;
+    const VM_SWAPUSAGE: c_int = 5;
+
+    const struct_xsw_usage = extern struct {
+        xsu_total: u64,
+        xsu_avail: u64,
+        xsu_used: u64,
+        xsu_pagesize: u32,
+        xsu_encrypted: c_int,
+    };
+
+    const sysctl = std.c.sysctl;
+    extern "c" fn getpagesize() c_int;
+};
 
 // Hand-written mach bindings. See the comment on the @cImport above for why
 // these are not pulled from the mach headers via translate-c. Type mapping
@@ -673,7 +686,7 @@ fn printValueMaybeColored(
     percent: u8,
 ) !void {
     std.debug.assert(percent <= 100);
-    std.debug.assert(@intFromEnum(unit) <= 4);
+    std.debug.assert(@backingInt(unit) <= 4);
     if (color) try writeUsageSgr(writer, percent);
     try printValue(writer, bytes, unit, use_si);
     if (color) try writer.writeAll("\x1b[0m");
@@ -888,7 +901,7 @@ pub fn printReport(
     render: RenderOptions,
 ) !void {
     std.debug.assert(prog_name.len != 0);
-    std.debug.assert(@intFromEnum(render.bar) <= 2);
+    std.debug.assert(@backingInt(render.bar) <= 2);
     try printHeader(writer, wide);
     try printMemRow(writer, "Mem:", info, unit, use_si, wide, false, render);
     try printMemRow(writer, "Swap:", info, unit, use_si, wide, true, render);
@@ -917,8 +930,8 @@ fn runFree_parseArgs(
     stderr_writer: *std.Io.Writer,
 ) !ParseResult {
     // Sanity on the exit-code constants this helper maps onto.
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) !=
-        @intFromEnum(common.ExitCode.success));
+    std.debug.assert(@backingInt(common.ExitCode.general_error) !=
+        @backingInt(common.ExitCode.success));
     std.debug.assert(prog_name.len != 0);
 
     const parsed = common.argparse.ArgParser.parse(FreeArgs, allocator, args) catch |err| {
@@ -933,7 +946,7 @@ fn runFree_parseArgs(
                 );
                 return ParseResult{
                     .parsed = null,
-                    .code = @intFromEnum(common.ExitCode.general_error),
+                    .code = @backingInt(common.ExitCode.general_error),
                 };
             },
             error.MissingValue => {
@@ -946,7 +959,7 @@ fn runFree_parseArgs(
                 );
                 return ParseResult{
                     .parsed = null,
-                    .code = @intFromEnum(common.ExitCode.general_error),
+                    .code = @backingInt(common.ExitCode.general_error),
                 };
             },
             error.InvalidValue => {
@@ -959,7 +972,7 @@ fn runFree_parseArgs(
                 );
                 return ParseResult{
                     .parsed = null,
-                    .code = @intFromEnum(common.ExitCode.general_error),
+                    .code = @backingInt(common.ExitCode.general_error),
                 };
             },
             else => {
@@ -972,12 +985,12 @@ fn runFree_parseArgs(
                 );
                 return ParseResult{
                     .parsed = null,
-                    .code = @intFromEnum(common.ExitCode.general_error),
+                    .code = @backingInt(common.ExitCode.general_error),
                 };
             },
         }
     };
-    return ParseResult{ .parsed = parsed, .code = @intFromEnum(common.ExitCode.success) };
+    return ParseResult{ .parsed = parsed, .code = @backingInt(common.ExitCode.success) };
 }
 
 /// Drive the continuous-display loop. The parent only calls this when an
@@ -1028,7 +1041,7 @@ fn runFree_displayContinuous(
         stdout_writer.writeAll("\n") catch {};
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Handle the early-exit flags (help, version) and the extra-operand error.
@@ -1040,16 +1053,16 @@ fn runFree_handleEarlyExit(
     stderr_writer: *std.Io.Writer,
 ) ?u8 {
     std.debug.assert(prog_name.len > 0);
-    std.debug.assert(@intFromEnum(common.ExitCode.success) == 0);
+    std.debug.assert(@backingInt(common.ExitCode.success) == 0);
 
     if (parsed.help) {
         printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.version) {
         printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.positionals.len > 0) {
@@ -1060,7 +1073,7 @@ fn runFree_handleEarlyExit(
             "extra operand '{s}'",
             .{parsed.positionals[0]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     return null;
@@ -1094,7 +1107,7 @@ fn reportInvalidWhen(
         "invalid argument '{s}' for '{s}'",
         .{ value, flag },
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 fn runFree_rejectZeroCount(
@@ -1102,7 +1115,7 @@ fn runFree_rejectZeroCount(
     parsed: FreeArgs,
     stderr_writer: *std.Io.Writer,
 ) ?u8 {
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) != 0);
+    std.debug.assert(@backingInt(common.ExitCode.general_error) != 0);
     const count = parsed.count orelse return null;
     if (count != 0) {
         std.debug.assert(count != 0);
@@ -1115,7 +1128,7 @@ fn runFree_rejectZeroCount(
         "failed to parse count argument: '0': Numerical result out of range",
         .{},
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 pub fn runFree(
@@ -1126,7 +1139,7 @@ pub fn runFree(
     stderr_writer: *std.Io.Writer,
 ) !u8 {
     std.debug.assert(prog_name.len > 0);
-    std.debug.assert(@intFromEnum(common.ExitCode.success) == 0);
+    std.debug.assert(@backingInt(common.ExitCode.success) == 0);
 
     const parse_result = try runFree_parseArgs(allocator, args, stderr_writer);
     if (parse_result.parsed == null) return parse_result.code;
@@ -1197,7 +1210,7 @@ fn displayOnce(
     render: RenderOptions,
 ) u8 {
     std.debug.assert(prog_name.len != 0);
-    std.debug.assert(@intFromEnum(common.ExitCode.success) == 0);
+    std.debug.assert(@backingInt(common.ExitCode.success) == 0);
     const info = getMemInfo(io) catch {
         common.printErrorWithProgram(
             allocator,
@@ -1206,14 +1219,14 @@ fn displayOnce(
             "failed to read memory information",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
     printReport(stdout_writer, info, unit, use_si, show_total, wide, render) catch {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 pub fn main(init: std.process.Init) !void {

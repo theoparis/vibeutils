@@ -97,23 +97,23 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const directories = parsed_args.positionals;
     if (directories.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, prog_name, "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const options = RmdirOptions{
@@ -132,7 +132,7 @@ fn run(
         stderr_writer,
         options,
     );
-    return @intFromEnum(exit_code);
+    return @backingInt(exit_code);
 }
 
 /// Print help information to provided writer.
@@ -750,7 +750,7 @@ test "rmdir: non-empty directory omits hint by default" {
     );
     defer testing.allocator.free(expected);
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expectEqualStrings(expected, stderr_aw.writer.buffered());
 }
 
@@ -789,6 +789,6 @@ test "rmdir: non-empty directory appends recursive-removal hint" {
     );
     defer testing.allocator.free(expected);
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expectEqualStrings(expected, stderr_aw.writer.buffered());
 }

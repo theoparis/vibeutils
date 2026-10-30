@@ -20,14 +20,8 @@ pub const c_group = c.group;
 // C library bindings for user/group lookups.
 pub const getpwnam = c.getpwnam;
 pub const getpwuid = c.getpwuid;
+pub const getgrnam = c.getgrnam;
 pub const getgrgid = c.getgrgid;
-
-/// Zig 0.16.0 declares `std.c.getgrnam` as `?*passwd` — an upstream typo, as
-/// every other `getgr*` prototype is correct. `group.gid` sits at offset 16
-/// and `passwd.gid` at 20, so routing group-by-name lookups through std's
-/// declaration would read struct group's tail padding instead of the gid, on
-/// Linux as well as macOS. Declare the correct prototype here instead.
-pub extern "c" fn getgrnam(name: [*:0]const u8) ?*c_group;
 
 extern "c" fn getuid() c.uid_t;
 extern "c" fn getgid() c.gid_t;
@@ -178,7 +172,7 @@ pub fn parseGroup(group_spec: []const u8, allocator: std.mem.Allocator) Error!gi
 /// Look up user by name using getpwnam
 /// This function ONLY performs name lookups - use parseUser for numeric ID parsing
 pub fn lookupUserByName(name: []const u8, allocator: std.mem.Allocator) Error!uid_t {
-    const name_z = allocator.dupeZ(u8, name) catch return Error.OutOfMemory;
+    const name_z = allocator.dupeSentinel(u8, name, 0) catch return Error.OutOfMemory;
     defer allocator.free(name_z);
     // dupeZ produces a null-terminated copy whose length (excluding the
     // sentinel) equals the source slice length.
@@ -191,7 +185,7 @@ pub fn lookupUserByName(name: []const u8, allocator: std.mem.Allocator) Error!ui
 /// Look up group by name using getgrnam
 /// This function ONLY performs name lookups - use parseGroup for numeric ID parsing
 pub fn lookupGroupByName(name: []const u8, allocator: std.mem.Allocator) Error!gid_t {
-    const name_z = allocator.dupeZ(u8, name) catch return Error.OutOfMemory;
+    const name_z = allocator.dupeSentinel(u8, name, 0) catch return Error.OutOfMemory;
     defer allocator.free(name_z);
     // dupeZ produces a null-terminated copy whose length (excluding the
     // sentinel) equals the source slice length.
@@ -478,26 +472,13 @@ test "user_group: the four lookups return pointers to std's platform structs" {
     try testing.expect(grgid_ret != ?*std.c.passwd);
 }
 
-test "user_group: std.c.getgrnam is mistyped upstream, so a local decl stays" {
-    // Zig 0.16.0 declares std.c.getgrnam as `?*passwd` -- an upstream typo;
-    // every other getgr* prototype is correct. group.gid sits at offset 16 and
-    // passwd.gid at 20, so routing group-by-name lookups through std's
-    // declaration would read struct group's tail padding instead of the gid,
-    // on Linux as well as macOS. This test is a tripwire, green today and
-    // green after the consolidation: when a Zig upgrade fixes the prototype it
-    // goes red, and that is the signal to delete the local getgrnam and use
-    // std's. build.zig.zon pins 0.16.0, so it cannot flip by accident.
+test "user_group: std.c.getgrnam returns std's group struct" {
+    // Zig 0.17 fixed the upstream prototype that used to return ?*passwd.
+    // Pin it shut so a regression cannot reintroduce the gid-offset memory bug
+    // this module used to route around.
     const std_grnam_ret = @typeInfo(@TypeOf(std.c.getgrnam)).@"fn".return_type.?;
-    try testing.expect(std_grnam_ret == ?*std.c.passwd);
-    // Negative space: the day this stops being a passwd pointer, delete the
-    // local declaration rather than "fixing" this test.
-    try testing.expect(std_grnam_ret != ?*std.c.group);
-    comptime {
-        // The differing gid offsets are what make the typo a live memory bug
-        // rather than a cosmetic naming slip.
-        std.debug.assert(@offsetOf(std.c.group, "gid") == 16);
-        std.debug.assert(@offsetOf(std.c.passwd, "gid") == 20);
-    }
+    try testing.expect(std_grnam_ret == ?*std.c.group);
+    try testing.expect(std_grnam_ret != ?*std.c.passwd);
 }
 
 /// Linux `std.c.passwd` has no `pw_fields`, so a Linux host cannot

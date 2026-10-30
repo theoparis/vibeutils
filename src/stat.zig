@@ -1937,7 +1937,7 @@ fn checkBsdConflicts(
             "can't use format '{c}' with '{c}'",
             .{ pair[0], pair[1] },
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     if (opts.type_suffix) {
         if (opts.bsd_mode == .none) {
@@ -1950,7 +1950,7 @@ fn checkBsdConflicts(
                 "can't use format '{c}' with -F",
                 .{bsdModeChar(opts.bsd_mode)},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
     }
     return checkBsdConflicts_gnuSelector(allocator, opts, stderr_writer);
@@ -1984,7 +1984,7 @@ fn checkBsdConflicts_gnuSelector(
         "can't use format '{c}' with {s}",
         .{ bsdModeChar(opts.bsd_mode), selector },
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 // ============================================================================
@@ -2011,17 +2011,17 @@ pub fn runStat(
             "{s}\nTry 'stat --help' for more information.",
             .{err_msg},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     if (opts.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (opts.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // The display modes conflict with each other, with -F and with the GNU
@@ -2039,7 +2039,7 @@ pub fn runStat(
             "missing operand\nTry 'stat --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     return runStat_operands(allocator, &opts, stdout_writer, stderr_writer);
@@ -2073,9 +2073,9 @@ fn runStat_operands(
     }
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Emit stat output for a single path. Returns true when the path could
@@ -2591,7 +2591,7 @@ test "stat -c format: permissions octal" {
     const test_file = try tmp_dir.dir().createFile(
         testing.io,
         "test.txt",
-        .{ .permissions = @enumFromInt(0o644) },
+        .{ .permissions = @fromBackingInt(@intCast(0o644)) },
     );
     test_file.close(testing.io);
 
@@ -2634,7 +2634,7 @@ test "stat -c format: permissions human readable" {
     const test_file = try tmp_dir.dir().createFile(
         testing.io,
         "test.txt",
-        .{ .permissions = @enumFromInt(0o644) },
+        .{ .permissions = @fromBackingInt(@intCast(0o644)) },
     );
     test_file.close(testing.io);
 
@@ -5328,7 +5328,7 @@ test "stat -F marks a fifo with a pipe" {
     const dir_path = try testAbsPath(&tmp_dir, "pipe");
     defer testing.allocator.free(dir_path);
 
-    const c_path = try testing.allocator.dupeZ(u8, dir_path);
+    const c_path = try testing.allocator.dupeSentinel(u8, dir_path, 0);
     defer testing.allocator.free(c_path);
     try testing.expectEqual(@as(c_int, 0), mkfifo(c_path.ptr, 0o644));
 

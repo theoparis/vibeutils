@@ -34,13 +34,13 @@ pub fn runYes(
     // Handle help flag
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version flag
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Build output string using std.mem.join for simplicity
@@ -102,7 +102,7 @@ fn runYes_handleParseError(
                     .{},
                 );
             }
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.MissingValue => {
             common.printErrorWithProgram(
@@ -112,7 +112,7 @@ fn runYes_handleParseError(
                 "option requires an argument",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidValue => {
             common.printErrorWithProgram(
@@ -122,7 +122,7 @@ fn runYes_handleParseError(
                 "invalid option value",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         else => return err,
     }
@@ -145,7 +145,7 @@ fn runYes_outputForever(stdout_writer: *std.Io.Writer, output_str: []const u8) !
         // GNU yes emits forever; sole exit is the write-error catch (e.g. BrokenPipe to head).
         while (true) { // tiger:allow:unbounded-loop exits on write error (BrokenPipe to head)
             stdout_writer.writeAll(output_str) catch {
-                return @intFromEnum(common.ExitCode.success);
+                return @backingInt(common.ExitCode.success);
             };
         }
     }
@@ -172,7 +172,7 @@ fn runYes_outputForever(stdout_writer: *std.Io.Writer, output_str: []const u8) !
         stdout_writer.writeAll(buffer[0..pos]) catch {
             // Any write error (including BrokenPipe) is expected when piping to head, etc.
             // yes traditionally exits silently on write errors
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         };
     }
 }
@@ -473,7 +473,7 @@ test "yes joins multiple arguments with spaces" {
 test "yes with string longer than 8192 bytes produces output" {
     const io = testing.io;
     // Build a string longer than the 8192-byte internal buffer.
-    const long_str = "A" ** 8193;
+    const long_str = repeatBytes("A", 8193);
 
     var writer = try CallBoundedWriter.init(testing.allocator, 16384, 100);
     defer writer.deinit();
@@ -501,7 +501,7 @@ test "yes with string longer than 8192 bytes produces output" {
 
 test "yes with string of exactly 8193 bytes works correctly" {
     const io = testing.io;
-    const str_8193 = "B" ** 8193;
+    const str_8193 = repeatBytes("B", 8193);
 
     var writer = try CallBoundedWriter.init(testing.allocator, 16384, 100);
     defer writer.deinit();
@@ -558,7 +558,7 @@ test "yes error message includes the unrecognized flag name" {
 test "yes with string much larger than buffer produces output" {
     const io = testing.io;
     // String that is 3x the buffer size
-    const huge_str = "C" ** (8192 * 3);
+    const huge_str = repeatBytes("C", (8192 * 3));
 
     var writer = try CallBoundedWriter.init(testing.allocator, 8192 * 4, 100);
     defer writer.deinit();
@@ -579,4 +579,16 @@ test "yes with string much larger than buffer produces output" {
     try testing.expect(output.len >= huge_str.len + 1);
     try testing.expect(std.mem.startsWith(u8, output, huge_str));
     try testing.expectEqual(@as(u8, '\n'), output[huge_str.len]);
+}
+
+/// Repeat `pattern` `count` times at comptime. Replaces the removed `**`
+/// array-repeat operator from earlier Zig versions.
+fn repeatBytes(comptime pattern: []const u8, comptime count: usize) *const [pattern.len * count]u8 {
+    @setEvalBranchQuota(pattern.len * count + 1024);
+    const result = comptime blk: {
+        var r: [pattern.len * count]u8 = undefined;
+        for (&r, 0..) |*byte, i| byte.* = pattern[i % pattern.len];
+        break :blk r;
+    };
+    return &result;
 }

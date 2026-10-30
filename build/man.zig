@@ -23,7 +23,7 @@ pub fn addInstall(b: *std.Build) void {
         // the top-level project's build root, not this package's root.
         // installFile() resolves src_path relative to the build root too,
         // so this access() check sees exactly what installFile will copy.
-        b.build_root.handle.access(b.graph.io, src_path, .{}) catch {
+        b.root.root_dir.handle.access(b.graph.io, src_path, .{}) catch {
             std.log.err("man page not found: {s} (required by utility '{s}')", .{
                 src_path, util.name,
             });

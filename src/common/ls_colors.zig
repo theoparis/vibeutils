@@ -54,7 +54,7 @@ const Segment = struct {
 };
 
 pub const Table = struct {
-    type_sgr: [indicator_count]?[]const u8 = .{null} ** indicator_count,
+    type_sgr: [indicator_count]?[]const u8 = @as([indicator_count]?[]const u8, @splat(null)),
     suffixes: []const Suffix = &.{},
     bytes: []u8 = &.{},
     suffix_buf: []Suffix = &.{},
@@ -318,7 +318,7 @@ fn storeControl(table: *Table, idx: u8, sgr: []const u8) void {
 }
 
 fn firstColored(hit: ColorHit) ?[]const u8 {
-    std.debug.assert(@intFromEnum(hit) <= @intFromEnum(ColorHit.sgr));
+    std.debug.assert(@backingInt(hit) <= @backingInt(ColorHit.sgr));
     return switch (hit) {
         .sgr => |sgr| sgr,
         .missing, .uncolored => null,

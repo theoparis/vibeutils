@@ -604,7 +604,7 @@ fn compileRegex(
     ignore_case: bool,
     extended: bool,
 ) ?*posix_regex.Regex {
-    const pattern_z = allocator.dupeZ(u8, pattern) catch return null;
+    const pattern_z = allocator.dupeSentinel(u8, pattern, 0) catch return null;
     defer allocator.free(pattern_z);
 
     const rf = posix_regex.flags();
@@ -2353,7 +2353,7 @@ fn evaluateLeaf_perm(stat_buf: StatInfo, pe: PermExpr) bool {
 /// failure (preserving the original best-effort behavior).
 fn evaluateLeaf_regex(allocator: Allocator, regex_ptr: *posix_regex.Regex, path: []const u8) bool {
     assert(path.len <= std.Io.Dir.max_path_bytes);
-    const path_z = allocator.dupeZ(u8, path) catch return false;
+    const path_z = allocator.dupeSentinel(u8, path, 0) catch return false;
     defer allocator.free(path_z);
     assert(path_z.len == path.len);
     return posix_regex.exec(regex_ptr, path_z.ptr, 0, null, 0) == 0;
@@ -3108,7 +3108,7 @@ fn formatDate(timestamp: i64, buf: *[24]u8) []const u8 {
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     };
 
-    const month_idx = @intFromEnum(month_day.month);
+    const month_idx = @backingInt(month_day.month);
     const month_name = if (month_idx > 0 and month_idx <= 12)
         months[month_idx - 1]
     else
@@ -4013,15 +4013,15 @@ fn runFind_afterParseErr(
 ) u8 {
     if (err == error.HelpRequested) {
         printHelp(allocator, stdout);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (err == error.VersionRequested) {
         printVersion(stdout);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     std.debug.assert(err != error.HelpRequested);
     std.debug.assert(err != error.VersionRequested);
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 pub fn runFind(
@@ -4081,9 +4081,9 @@ pub fn runFind(
     if (!batch_ctx.flushExecdir(io, allocator, stdout, stderr)) had_error = true;
 
     return if (had_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 pub fn main(init: std.process.Init) !void {
@@ -4805,7 +4805,7 @@ test "find: -size filter" {
     const f1 = try tmp.dir().createFile(testing.io, "small.txt", .{});
     f1.close(testing.io);
     const f2 = try tmp.dir().createFile(testing.io, "medium.txt", .{});
-    try f2.writeStreamingAll(testing.io, "a" ** 2048);
+    try f2.writeStreamingAll(testing.io, repeatBytes("a", 2048));
     f2.close(testing.io);
 
     const dir_path = try tmp.getBasePath();
@@ -4837,11 +4837,11 @@ test "find: -perm filter" {
     defer tmp.deinit();
 
     const f1 = try tmp.dir().createFile(testing.io, "rw.txt", .{
-        .permissions = @enumFromInt(0o644),
+        .permissions = @fromBackingInt(@intCast(0o644)),
     });
     f1.close(testing.io);
     const f2 = try tmp.dir().createFile(testing.io, "rwx.txt", .{
-        .permissions = @enumFromInt(0o755),
+        .permissions = @fromBackingInt(@intCast(0o755)),
     });
     f2.close(testing.io);
 
@@ -6960,7 +6960,7 @@ test "find: -size 1 matches 100-byte file (block rounding)" {
     defer tmp.deinit();
 
     const f = try tmp.dir().createFile(testing.io, "small.txt", .{});
-    try f.writeStreamingAll(testing.io, "x" ** 100);
+    try f.writeStreamingAll(testing.io, repeatBytes("x", 100));
     f.close(testing.io);
 
     const dir_path = try tmp.getBasePath();
@@ -6995,7 +6995,7 @@ test "find: -size 2 matches 513-byte file (block rounding)" {
     defer tmp.deinit();
 
     const f = try tmp.dir().createFile(testing.io, "medium.txt", .{});
-    try f.writeStreamingAll(testing.io, "x" ** 513);
+    try f.writeStreamingAll(testing.io, repeatBytes("x", 513));
     f.close(testing.io);
 
     const dir_path = try tmp.getBasePath();
@@ -7031,11 +7031,11 @@ test "find: -size -2 excludes 513-byte file (block rounding)" {
     defer tmp.deinit();
 
     const f1 = try tmp.dir().createFile(testing.io, "twoblk.txt", .{});
-    try f1.writeStreamingAll(testing.io, "x" ** 513);
+    try f1.writeStreamingAll(testing.io, repeatBytes("x", 513));
     f1.close(testing.io);
 
     const f2 = try tmp.dir().createFile(testing.io, "oneblk.txt", .{});
-    try f2.writeStreamingAll(testing.io, "x" ** 100);
+    try f2.writeStreamingAll(testing.io, repeatBytes("x", 100));
     f2.close(testing.io);
 
     const dir_path = try tmp.getBasePath();
@@ -7318,7 +7318,7 @@ test "find: -user resolves a name to its uid, not to its gid" {
     if (picked_name.len == 0) return error.SkipZigTest;
     try testing.expect(picked_uid != picked_gid);
 
-    const path_z = try allocator.dupeZ(u8, file_path);
+    const path_z = try allocator.dupeSentinel(u8, file_path, 0);
     const rc = std.c.fchownat(std.c.AT.FDCWD, path_z.ptr, picked_uid, picked_gid, 0);
     try testing.expectEqual(@as(c_int, 0), rc);
 
@@ -7365,7 +7365,7 @@ test "find: -group resolves a name to its gid, not to zero" {
     if (picked_name.len == 0) return error.SkipZigTest;
     try testing.expect(picked_gid != 0);
 
-    const path_z = try allocator.dupeZ(u8, file_path);
+    const path_z = try allocator.dupeSentinel(u8, file_path, 0);
     const rc = std.c.fchownat(std.c.AT.FDCWD, path_z.ptr, std.c.geteuid(), picked_gid, 0);
     try testing.expectEqual(@as(c_int, 0), rc);
 
@@ -9758,4 +9758,16 @@ test "find #182: -exec true -depth stays pre-order" {
     try testing.expect(dir_pos != null);
     try testing.expect(file_pos != null);
     try testing.expect(dir_pos.? < file_pos.?);
+}
+
+/// Repeat `pattern` `count` times at comptime. Replaces the removed `**`
+/// array-repeat operator from earlier Zig versions.
+fn repeatBytes(comptime pattern: []const u8, comptime count: usize) *const [pattern.len * count]u8 {
+    @setEvalBranchQuota(pattern.len * count + 1024);
+    const result = comptime blk: {
+        var r: [pattern.len * count]u8 = undefined;
+        for (&r, 0..) |*byte, i| byte.* = pattern[i % pattern.len];
+        break :blk r;
+    };
+    return &result;
 }

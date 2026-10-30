@@ -93,8 +93,8 @@ fn style_write_color(writer: anytype, color_int: u8) !void {
 /// holds so a future enum reorder that broke the model would trip here,
 /// not silently misbehave.
 fn style_write_bold(writer: anytype) !void {
-    const none = @intFromEnum(TerminalColorMode.none);
-    const basic = @intFromEnum(TerminalColorMode.basic);
+    const none = @backingInt(TerminalColorMode.none);
+    const basic = @backingInt(TerminalColorMode.basic);
     std.debug.assert(none == 0);
     std.debug.assert(none < basic);
     try writer.writeAll("\x1b[1m");
@@ -107,9 +107,9 @@ fn style_write_bold(writer: anytype) !void {
 /// across this file depend on that ordinal ordering. Assert it as a
 /// relationship of compile-time constants.
 fn style_write_rgb(writer: anytype, r: u8, g: u8, b: u8) !void {
-    const truecolor = @intFromEnum(TerminalColorMode.truecolor);
-    const extended = @intFromEnum(TerminalColorMode.extended);
-    const basic = @intFromEnum(TerminalColorMode.basic);
+    const truecolor = @backingInt(TerminalColorMode.truecolor);
+    const extended = @backingInt(TerminalColorMode.extended);
+    const basic = @backingInt(TerminalColorMode.basic);
     std.debug.assert(truecolor > extended);
     std.debug.assert(truecolor > basic);
     try writer.print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
@@ -123,9 +123,9 @@ fn style_write_rgb(writer: anytype, r: u8, g: u8, b: u8) !void {
 /// basic < extended < truecolor. The compiler does not enforce declaration
 /// order, so a reorder would silently break the `< extended` guard.
 fn style_write_256(writer: anytype, index: u8) !void {
-    const basic = @intFromEnum(TerminalColorMode.basic);
-    const extended = @intFromEnum(TerminalColorMode.extended);
-    const truecolor = @intFromEnum(TerminalColorMode.truecolor);
+    const basic = @backingInt(TerminalColorMode.basic);
+    const extended = @backingInt(TerminalColorMode.extended);
+    const truecolor = @backingInt(TerminalColorMode.truecolor);
     std.debug.assert(basic < extended);
     std.debug.assert(extended < truecolor);
     try writer.print("\x1b[38;5;{d}m", .{index});
@@ -138,8 +138,8 @@ fn style_write_256(writer: anytype, index: u8) !void {
 /// color is enabled. Mirror the capability ordering setBold/set256 rely on
 /// so all three trip together if the enum model is ever broken.
 fn style_write_reset(writer: anytype) !void {
-    const none = @intFromEnum(TerminalColorMode.none);
-    const truecolor = @intFromEnum(TerminalColorMode.truecolor);
+    const none = @backingInt(TerminalColorMode.none);
+    const truecolor = @backingInt(TerminalColorMode.truecolor);
     std.debug.assert(none == 0);
     std.debug.assert(none < truecolor);
     try writer.writeAll("\x1b[0m");
@@ -172,7 +172,7 @@ pub fn Style(comptime Writer: type) type {
         /// Set foreground color
         pub fn setColor(self: Self, color: Color) !void {
             if (self.color_mode == .none) return;
-            try style_write_color(self.writer, @intFromEnum(color));
+            try style_write_color(self.writer, @backingInt(color));
         }
 
         /// Set bold text
@@ -189,7 +189,7 @@ pub fn Style(comptime Writer: type) type {
 
         /// Set foreground to 256-color palette (extended+ only, no-op otherwise)
         pub fn set256(self: Self, index: u8) !void {
-            if (@intFromEnum(self.color_mode) < @intFromEnum(ColorMode.extended)) return;
+            if (@backingInt(self.color_mode) < @backingInt(ColorMode.extended)) return;
             try style_write_256(self.writer, index);
         }
 
@@ -204,7 +204,7 @@ pub fn Style(comptime Writer: type) type {
 test "Style color detection" {
     const TestStyle = Style(*std.Io.Writer);
     const mode = try TestStyle.ColorMode.detect(std.testing.allocator);
-    try std.testing.expect(@intFromEnum(mode) >= 0);
+    try std.testing.expect(@backingInt(mode) >= 0);
 }
 
 test "Style setRgb truecolor" {

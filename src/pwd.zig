@@ -48,7 +48,7 @@ pub fn runPwd(
                     "unrecognized option",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.MissingValue => {
                 common.printErrorWithProgram(
@@ -58,7 +58,7 @@ pub fn runPwd(
                     "option requires an argument",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             error.InvalidValue => {
                 common.printErrorWithProgram(
@@ -68,7 +68,7 @@ pub fn runPwd(
                     "invalid option value",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             else => return err,
         }
@@ -77,12 +77,12 @@ pub fn runPwd(
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try stdout_writer.print("pwd ({s}) {s}\n", .{ common.name, common.version });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const cwd = getWorkingDirectory(allocator, io, parsed_args) catch |err| {
@@ -93,12 +93,12 @@ pub fn runPwd(
             "failed to get current directory: {s}",
             .{common.posixErrorString(err)},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer allocator.free(cwd);
 
     try stdout_writer.print("{s}\n", .{cwd});
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 pub fn main(init: std.process.Init) noreturn {

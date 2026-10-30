@@ -30,15 +30,15 @@ const SignalEntry = struct {
 /// Signal numbers come from std.posix.SIG to ensure platform-correct
 /// values (e.g., USR1 is 30 on macOS but 10 on Linux).
 const signal_table = [_]SignalEntry{
-    .{ .name = "HUP", .number = @intFromEnum(std.posix.SIG.HUP) },
-    .{ .name = "INT", .number = @intFromEnum(std.posix.SIG.INT) },
-    .{ .name = "QUIT", .number = @intFromEnum(std.posix.SIG.QUIT) },
-    .{ .name = "ABRT", .number = @intFromEnum(std.posix.SIG.ABRT) },
-    .{ .name = "KILL", .number = @intFromEnum(std.posix.SIG.KILL) },
-    .{ .name = "ALRM", .number = @intFromEnum(std.posix.SIG.ALRM) },
-    .{ .name = "TERM", .number = @intFromEnum(std.posix.SIG.TERM) },
-    .{ .name = "USR1", .number = @intFromEnum(std.posix.SIG.USR1) },
-    .{ .name = "USR2", .number = @intFromEnum(std.posix.SIG.USR2) },
+    .{ .name = "HUP", .number = @backingInt(std.posix.SIG.HUP) },
+    .{ .name = "INT", .number = @backingInt(std.posix.SIG.INT) },
+    .{ .name = "QUIT", .number = @backingInt(std.posix.SIG.QUIT) },
+    .{ .name = "ABRT", .number = @backingInt(std.posix.SIG.ABRT) },
+    .{ .name = "KILL", .number = @backingInt(std.posix.SIG.KILL) },
+    .{ .name = "ALRM", .number = @backingInt(std.posix.SIG.ALRM) },
+    .{ .name = "TERM", .number = @backingInt(std.posix.SIG.TERM) },
+    .{ .name = "USR1", .number = @backingInt(std.posix.SIG.USR1) },
+    .{ .name = "USR2", .number = @backingInt(std.posix.SIG.USR2) },
 };
 
 /// Command-line arguments for the timeout utility
@@ -336,7 +336,7 @@ pub fn runTimeout(
         processed_args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.internal_error);
+    ) catch return @backingInt(common.ExitCode.internal_error);
     defer allocator.free(parsed.positionals);
 
     if (parsed.help) {
@@ -1041,7 +1041,7 @@ test "signal_table - USR1 matches platform signal number" {
     // The signal_table must use platform-correct values, not hardcoded
     // BSD/macOS numbers. On Linux SIGUSR1=10, on macOS SIGUSR1=30.
     // Compare against std.posix.SIG which provides OS-correct constants.
-    const expected: u8 = @intFromEnum(std.posix.SIG.USR1);
+    const expected: u8 = @backingInt(std.posix.SIG.USR1);
     var found = false;
     for (signal_table) |entry| {
         if (std.mem.eql(u8, entry.name, "USR1")) {
@@ -1055,7 +1055,7 @@ test "signal_table - USR1 matches platform signal number" {
 
 test "signal_table - USR2 matches platform signal number" {
     // On Linux SIGUSR2=12, on macOS SIGUSR2=31.
-    const expected: u8 = @intFromEnum(std.posix.SIG.USR2);
+    const expected: u8 = @backingInt(std.posix.SIG.USR2);
     var found = false;
     for (signal_table) |entry| {
         if (std.mem.eql(u8, entry.name, "USR2")) {
@@ -1071,7 +1071,7 @@ test "parseSignal - USR1 returns platform-correct value" {
     // parseSignal must return the OS-defined signal number, not a
     // hardcoded constant. This catches the bug where USR1=30 (macOS)
     // is returned on Linux where USR1 should be 10.
-    const expected: u8 = @intFromEnum(std.posix.SIG.USR1);
+    const expected: u8 = @backingInt(std.posix.SIG.USR1);
     try testing.expectEqual(@as(?u8, expected), parseSignal("USR1"));
     try testing.expectEqual(@as(?u8, expected), parseSignal("SIGUSR1"));
     try testing.expectEqual(@as(?u8, expected), parseSignal("usr1"));
@@ -1079,7 +1079,7 @@ test "parseSignal - USR1 returns platform-correct value" {
 }
 
 test "parseSignal - USR2 returns platform-correct value" {
-    const expected: u8 = @intFromEnum(std.posix.SIG.USR2);
+    const expected: u8 = @backingInt(std.posix.SIG.USR2);
     try testing.expectEqual(@as(?u8, expected), parseSignal("USR2"));
     try testing.expectEqual(@as(?u8, expected), parseSignal("SIGUSR2"));
     try testing.expectEqual(@as(?u8, expected), parseSignal("usr2"));
@@ -1117,7 +1117,7 @@ test "runTimeout - unknown flag returns 125" {
         &stderr_aw.writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.internal_error)), result);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.internal_error)), result);
 }
 
 test "runTimeout - missing command after duration returns 125" {

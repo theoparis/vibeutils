@@ -182,19 +182,19 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Create options (-h and -n are both aliases for --no-dereference)
@@ -230,11 +230,11 @@ fn run(
             "missing file operand",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     const exit_code = try createLinks(allocator, io, files, options, stdout_writer, stderr_writer);
-    return @intFromEnum(exit_code);
+    return @backingInt(exit_code);
 }
 
 /// Print help information to provided writer
@@ -982,9 +982,9 @@ fn createSingleLink_hardLink(
     } else {
         std.debug.assert(flags == @as(c_uint, @intCast(AT_SYMLINK_FOLLOW)));
     }
-    const target_z = try allocator.dupeZ(u8, target);
+    const target_z = try allocator.dupeSentinel(u8, target, 0);
     defer allocator.free(target_z);
-    const link_name_z = try allocator.dupeZ(u8, link_name);
+    const link_name_z = try allocator.dupeSentinel(u8, link_name, 0);
     defer allocator.free(link_name_z);
 
     const result = c.linkat(c.AT.FDCWD, target_z, c.AT.FDCWD, link_name_z, flags);

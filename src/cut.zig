@@ -363,7 +363,7 @@ pub fn runCut(
         args,
         "cut",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     if (parsed.help) {
@@ -396,7 +396,7 @@ pub fn runCut(
             "invalid range: '{s}'",
             .{list_str},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer allocator.free(ranges);
 
@@ -456,7 +456,7 @@ fn runCut_dispatch(
         if (result > 0) has_error = true;
     }
 
-    return if (has_error) @intFromEnum(common.ExitCode.general_error) else 0;
+    return if (has_error) @backingInt(common.ExitCode.general_error) else 0;
 }
 
 /// Resolved per-line cut options, bundled so the dispatch helpers avoid
@@ -522,7 +522,7 @@ fn runCut_processPositional(
             "{s}: {s}",
             .{ file_path, common.posixErrorString(err) },
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer file.close(io);
 
@@ -585,7 +585,7 @@ fn runCut_resolveMode(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return .{ .exit = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit = @backingInt(common.ExitCode.general_error) };
     }
 
     if (mode_count > 1) {
@@ -597,7 +597,7 @@ fn runCut_resolveMode(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return .{ .exit = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit = @backingInt(common.ExitCode.general_error) };
     }
 
     assert(mode_count == 1);
@@ -635,7 +635,7 @@ fn runCut_validateFlags(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -d is only valid with -f
@@ -648,7 +648,7 @@ fn runCut_validateFlags(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -w is only valid with -f
@@ -661,7 +661,7 @@ fn runCut_validateFlags(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -w and -d are mutually exclusive
@@ -674,7 +674,7 @@ fn runCut_validateFlags(
                 "Try 'cut --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     return null;
@@ -720,7 +720,7 @@ fn runCut_resolveDelimiters(
                 "the delimiter must be a single character",
                 .{},
             );
-            return .{ .exit = @intFromEnum(common.ExitCode.general_error) };
+            return .{ .exit = @backingInt(common.ExitCode.general_error) };
         }
         if (d.len > 1) {
             common.printErrorWithProgram(
@@ -730,7 +730,7 @@ fn runCut_resolveDelimiters(
                 "the delimiter must be a single character",
                 .{},
             );
-            return .{ .exit = @intFromEnum(common.ExitCode.general_error) };
+            return .{ .exit = @backingInt(common.ExitCode.general_error) };
         }
         break :blk d[0];
     } else '\t';
@@ -836,7 +836,7 @@ fn processFile(
                 "read error: {s}",
                 .{common.posixErrorString(err)},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
 
         if (eof and line_buf.items.len == 0) break;
@@ -934,7 +934,7 @@ fn emitLine_writeError(
         "write error: {s}",
         .{common.posixErrorString(err)},
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// Emit a single line in field mode (whitespace or delimiter split). Returns 0

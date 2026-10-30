@@ -140,7 +140,7 @@ environments are isolated.
 ### Build from source
 
 Requirements: the Zig version pinned in `build.zig.zon`
-(`.minimum_zig_version`), currently 0.16.0.
+(`.minimum_zig_version`), currently 0.17.0.
 
 ```bash
 git clone https://github.com/kelp/vibeutils.git

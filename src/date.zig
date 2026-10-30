@@ -812,26 +812,26 @@ pub fn runDate(
     const parsed = parseArgs(args);
     if (parsed.err) |err_msg| {
         runDate_printParseErr(allocator, stderr_writer, parsed.opts, err_msg);
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     const opts = parsed.opts;
 
     // Handle help
     if (opts.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (opts.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate precision arguments
     if (validatePrecision(opts)) |err_msg| {
         common.printErrorWithProgram(allocator, stderr_writer, prog_name, "{s}", .{err_msg});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Handle -v stub: not yet implemented, exit with error
@@ -843,14 +843,14 @@ pub fn runDate(
             "-v adjustment not yet implemented",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Resolve the timestamp to format
     const ts = resolveTimestamp(io, opts);
     if (ts.err) |err_msg| {
         runDate_printTsErr(allocator, stderr_writer, opts, err_msg);
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Convert to broken-down time
@@ -863,7 +863,7 @@ pub fn runDate(
             "cannot convert time",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Get format string
@@ -876,7 +876,7 @@ pub fn runDate(
     try stdout_writer.writeAll(output);
     try stdout_writer.writeByte('\n');
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// CLI entry point

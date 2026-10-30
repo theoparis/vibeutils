@@ -25,9 +25,9 @@ pub fn runFalse(
     // The sole purpose of `false` is to exit unsuccessfully with status 1.
     // Guard that the exit code we return is the POSIX failure code, so a
     // refactor of the ExitCode enum can never silently make `false` succeed.
-    comptime std.debug.assert(@intFromEnum(common.ExitCode.general_error) == 1);
+    comptime std.debug.assert(@backingInt(common.ExitCode.general_error) == 1);
 
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// Standard main function - minimal since false never outputs

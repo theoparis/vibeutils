@@ -391,9 +391,9 @@ pub const ArgParser = struct {
         const type_info = @typeInfo(T);
 
         // Handle special field types
-        inline for (type_info.@"struct".fields) |field| {
-            if (comptime std.mem.eql(u8, field.name, "positionals")) {
-                if (field.type == []const []const u8) {
+        inline for (type_info.@"struct".field_names, type_info.@"struct".field_types) |field_name, field_type| {
+            if (comptime std.mem.eql(u8, field_name, "positionals")) {
+                if (field_type == []const []const u8) {
                     const positionals_slice = try positionals.toOwnedSlice(allocator);
                     @field(result, "positionals") = positionals_slice;
                 }
@@ -411,18 +411,18 @@ pub const ArgParser = struct {
 
     fn parseLongFlag(comptime T: type, obj: *T, flag_name: []const u8) !bool {
         const type_info = @typeInfo(T);
-        inline for (type_info.@"struct".fields) |field| {
-            if (field.type == bool) {
+        inline for (type_info.@"struct".field_names, type_info.@"struct".field_types) |field_name, field_type| {
+            if (field_type == bool) {
                 // Check if flag matches field name
-                if (std.mem.eql(u8, field.name, flag_name)) {
-                    @field(obj, field.name) = true;
+                if (std.mem.eql(u8, field_name, flag_name)) {
+                    @field(obj, field_name) = true;
                     return true;
                 }
 
                 // Check if flag matches long flag format
-                const long_flag = comptime getLongFlag(field.name);
+                const long_flag = comptime getLongFlag(field_name);
                 if (std.mem.eql(u8, long_flag, flag_name)) {
-                    @field(obj, field.name) = true;
+                    @field(obj, field_name) = true;
                     return true;
                 }
             }
@@ -455,15 +455,15 @@ pub const ArgParser = struct {
         // what makes an exact name beat being the prefix of a longer one, so
         // `--interactive` never reports ambiguity against `--interactive-once`.
         const type_info = @typeInfo(T);
-        inline for (type_info.@"struct".fields) |field| {
-            const long_flag = comptime getLongFlag(field.name);
-            const matches = std.mem.eql(u8, field.name, flag_name) or
+        inline for (type_info.@"struct".field_names) |field_name| {
+            const long_flag = comptime getLongFlag(field_name);
+            const matches = std.mem.eql(u8, field_name, flag_name) or
                 std.mem.eql(u8, long_flag, flag_name);
 
             if (matches) {
                 const used = try parseLongFlag_assignField(
                     T,
-                    field.name,
+                    field_name,
                     obj,
                     provided_value,
                     next_arg,
@@ -571,19 +571,20 @@ pub const ArgParser = struct {
         // Every field's long spelling is rebuilt at comptime twice over, once
         // per pass; the widest Args struct here outruns the default quota.
         @setEvalBranchQuota(10_000);
-        const fields = @typeInfo(T).@"struct".fields;
+        const field_names = @typeInfo(T).@"struct".field_names;
+        const field_types = @typeInfo(T).@"struct".field_types;
 
         var match_count: u32 = 0;
         var match_index: u32 = 0;
-        inline for (fields, 0..) |field, index| {
-            if (comptime isFlagField(field.type)) {
-                if (std.mem.startsWith(u8, comptime getLongFlag(field.name), flag_name)) {
+        inline for (field_names, field_types, 0..) |field_name, field_type, index| {
+            if (comptime isFlagField(field_type)) {
+                if (std.mem.startsWith(u8, comptime getLongFlag(field_name), flag_name)) {
                     match_count += 1;
                     match_index = index;
                 }
             }
         }
-        std.debug.assert(match_count <= fields.len);
+        std.debug.assert(match_count <= field_names.len);
 
         if (match_count == 0) return .Unknown;
         if (match_count > 1) {
@@ -596,17 +597,17 @@ pub const ArgParser = struct {
 
         // An `inline for` cannot break with a runtime-selected field, so the
         // single match is dispatched by a second pass guarded on its index.
-        inline for (fields, 0..) |field, index| {
-            if (comptime isFlagField(field.type)) {
+        inline for (field_names, field_types, 0..) |field_name, field_type, index| {
+            if (comptime isFlagField(field_type)) {
                 if (index == match_index) {
                     return parseLongFlag_assignField(
                         T,
-                        field.name,
+                        field_name,
                         obj,
                         provided_value,
                         next_arg,
                         position,
-                        comptime "--" ++ getLongFlag(field.name),
+                        comptime "--" ++ getLongFlag(field_name),
                         diag,
                     );
                 }
@@ -629,25 +630,25 @@ pub const ArgParser = struct {
         std.debug.assert(provided_value == null or next_arg == null);
 
         const type_info = @typeInfo(T);
-        inline for (type_info.@"struct".fields) |field| {
+        inline for (type_info.@"struct".field_names, type_info.@"struct".field_types) |field_name, field_type| {
             // Check metadata first, then default
             const short_flag = if (@hasDecl(T, "meta") and
-                @hasField(@TypeOf(T.meta), field.name) and
-                @hasField(@TypeOf(@field(T.meta, field.name)), "short"))
-                @field(T.meta, field.name).short
+                @hasField(@TypeOf(T.meta), field_name) and
+                @hasField(@TypeOf(@field(T.meta, field_name)), "short"))
+                @field(T.meta, field_name).short
             else
-                comptime getShortFlag(field.name);
+                comptime getShortFlag(field_name);
 
             if (short_flag == flag_char) {
                 // Check field type
-                const field_type_info = @typeInfo(field.type);
-                if (field.type == bool) {
+                const field_type_info = @typeInfo(field_type);
+                if (field_type == bool) {
                     // No GNU wording is pinned for `-h=value`, so leave the
                     // diagnostic empty and let the printer fall back.
                     if (provided_value != null) {
                         return ParseError.TooManyValues;
                     }
-                    @field(obj, field.name) = true;
+                    @field(obj, field_name) = true;
                     return .NoValue;
                 } else if (field_type_info == .optional) {
                     // Optional field - parse based on child type
@@ -658,10 +659,10 @@ pub const ArgParser = struct {
 
                     // argv carries no long name when the value arrived through
                     // a short flag, so name the canonical long form instead.
-                    const flag_display = comptime "--" ++ getLongFlag(field.name);
+                    const flag_display = comptime "--" ++ getLongFlag(field_name);
                     try parseValue(
                         field_type_info.optional.child,
-                        &@field(obj, field.name),
+                        &@field(obj, field_name),
                         value_str,
                         flag_display,
                         position,
@@ -676,17 +677,17 @@ pub const ArgParser = struct {
 
     fn parseShortFlag(comptime T: type, obj: *T, flag: u8) !bool {
         const type_info = @typeInfo(T);
-        inline for (type_info.@"struct".fields) |field| {
-            if (field.type == bool) {
+        inline for (type_info.@"struct".field_names, type_info.@"struct".field_types) |field_name, field_type| {
+            if (field_type == bool) {
                 const short_flag = if (@hasDecl(T, "meta") and
-                    @hasField(@TypeOf(T.meta), field.name) and
-                    @hasField(@TypeOf(@field(T.meta, field.name)), "short"))
-                    @field(T.meta, field.name).short
+                    @hasField(@TypeOf(T.meta), field_name) and
+                    @hasField(@TypeOf(@field(T.meta, field_name)), "short"))
+                    @field(T.meta, field_name).short
                 else
-                    comptime getShortFlag(field.name);
+                    comptime getShortFlag(field_name);
 
                 if (short_flag == flag) {
-                    @field(obj, field.name) = true;
+                    @field(obj, field_name) = true;
                     return true;
                 }
             }
@@ -927,9 +928,9 @@ pub const ArgParser = struct {
         // Rebuilding every field's long spelling outruns the default quota on
         // the widest Args struct here, just as the parse path does.
         @setEvalBranchQuota(10_000);
-        inline for (@typeInfo(T).@"struct".fields) |field| {
-            if (comptime isFlagField(field.type)) {
-                const long_flag = comptime "--" ++ getLongFlag(field.name);
+        inline for (@typeInfo(T).@"struct".field_names, @typeInfo(T).@"struct".field_types) |field_name, field_type| {
+            if (comptime isFlagField(field_type)) {
+                const long_flag = comptime "--" ++ getLongFlag(field_name);
                 if (std.mem.startsWith(u8, long_flag[2..], prefix)) {
                     stderr_writer.print(" '{s}'", .{long_flag}) catch {};
                 }
@@ -1394,7 +1395,7 @@ test "very long argument strings" {
         path: ?[]const u8 = null,
     };
 
-    const long_path = "a" ** 500; // 500 character path
+    const long_path = repeatBytes("a", 500); // 500 character path
     const args = [_][]const u8{"--path=" ++ long_path};
     const result = try ArgParser.parse(TestArgs, testing.allocator, &args);
 
@@ -1988,4 +1989,16 @@ test "parseOrExit: strict-prefix candidates are both listed, shorter name first"
             "Try 'testprog --help' for more information.\n",
         w.buffered(),
     );
+}
+
+/// Repeat `pattern` `count` times at comptime. Replaces the removed `**`
+/// array-repeat operator from earlier Zig versions.
+fn repeatBytes(comptime pattern: []const u8, comptime count: usize) *const [pattern.len * count]u8 {
+    @setEvalBranchQuota(pattern.len * count + 1024);
+    const result = comptime blk: {
+        var r: [pattern.len * count]u8 = undefined;
+        for (&r, 0..) |*byte, i| byte.* = pattern[i % pattern.len];
+        break :blk r;
+    };
+    return &result;
 }

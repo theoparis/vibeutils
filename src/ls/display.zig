@@ -291,7 +291,7 @@ fn writeEntryNameReset(
     color_started: bool,
 ) !void {
     std.debug.assert(style.color_mode != .none);
-    std.debug.assert(@intFromEnum(style.color_mode) > 0);
+    std.debug.assert(@backingInt(style.color_mode) > 0);
     // GNU prints ec/CSI-reset only after a start sequence was applied.
     if (!color_started) return;
     if (options.ls_colors) |table| {

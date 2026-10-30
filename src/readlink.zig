@@ -93,25 +93,25 @@ pub fn runReadlink(
         args,
         "readlink",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     // Handle help
     if (parsed.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate: need at least one operand
     if (parsed.positionals.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, "readlink", "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // The empty-operand case returned above, so the loop below always has work.
@@ -139,9 +139,9 @@ pub fn runReadlink(
     }
 
     if (has_error) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Resolve and emit one path for `runReadlink`. Returns `true` if the path

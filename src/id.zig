@@ -101,19 +101,19 @@ pub fn runId(
         args,
         "id",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     // Handle help
     if (parsed.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle -A (audit) stub: print diagnostic and exit 1
@@ -125,7 +125,7 @@ pub fn runId(
             "-A (audit) not supported on this platform",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Reject extra positional arguments (at most one USERNAME)
@@ -137,7 +137,7 @@ pub fn runId(
             "extra operand '{s}'",
             .{parsed.positionals[1]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Validate flag combinations; bail out early with an error code if invalid.
@@ -229,7 +229,7 @@ fn runId_checkFlagCombos(
             "cannot print only names in default format",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     if (parsed.real and !parsed.user and !parsed.group and !show_groups) {
         common.printErrorWithProgram(
@@ -239,7 +239,7 @@ fn runId_checkFlagCombos(
             "cannot print only real IDs in default format",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // GNU id: -z requires a format flag (-u, -g, or -G).
@@ -251,7 +251,7 @@ fn runId_checkFlagCombos(
             "option --zero not permitted in default format",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Mutually exclusive: -u, -g, -G.
@@ -268,7 +268,7 @@ fn runId_checkFlagCombos(
             "cannot print 'only' of more than one choice",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // -p is mutually exclusive with -u, -g, -G.
@@ -280,7 +280,7 @@ fn runId_checkFlagCombos(
             "cannot print 'only' of more than one choice",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     return null;
@@ -316,7 +316,7 @@ fn runId_resolveTarget(
                     "'{s}': no such user",
                     .{username},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             allocator,
         ) catch {
@@ -327,7 +327,7 @@ fn runId_resolveTarget(
                 "'{s}': no such user",
                 .{username},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer allocator.free(user_info.name);
         out_uid.* = user_info.uid;
@@ -362,7 +362,7 @@ fn runId_printFullName(ctx: *const RunIdContext, uid: common.user_group.uid_t) !
         const gecos = spanOrEmpty(passwd.gecos);
         try stdout_writer.print("{s}", .{gecos});
         try stdout_writer.writeByte(delimiter);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     } else {
         common.printErrorWithProgram(
             allocator,
@@ -371,7 +371,7 @@ fn runId_printFullName(ctx: *const RunIdContext, uid: common.user_group.uid_t) !
             "cannot find full name for user ID {d}",
             .{uid},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 }
 
@@ -420,7 +420,7 @@ fn runId_printPasswdEntry(ctx: *const RunIdContext, uid: common.user_group.uid_t
             });
         }
         try stdout_writer.writeByte(delimiter);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     } else {
         common.printErrorWithProgram(
             allocator,
@@ -429,7 +429,7 @@ fn runId_printPasswdEntry(ctx: *const RunIdContext, uid: common.user_group.uid_t
             "cannot find passwd entry for user ID {d}",
             .{uid},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 }
 
@@ -464,7 +464,7 @@ fn runId_printUserOnly(
                 "cannot find name for user ID {d}",
                 .{target_uid},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer allocator.free(info.name);
         try stdout_writer.print("{s}", .{info.name});
@@ -472,7 +472,7 @@ fn runId_printUserOnly(
         try stdout_writer.print("{d}", .{target_uid});
     }
     try stdout_writer.writeByte(delimiter);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Handle -g: print only the effective (or real) group ID or name.
@@ -506,7 +506,7 @@ fn runId_printGroupOnly(
                 "cannot find name for group ID {d}",
                 .{target_gid},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer allocator.free(info.name);
         try stdout_writer.print("{s}", .{info.name});
@@ -514,7 +514,7 @@ fn runId_printGroupOnly(
         try stdout_writer.print("{d}", .{target_gid});
     }
     try stdout_writer.writeByte(delimiter);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Handle -G: print all group IDs (or names) for the target user.
@@ -567,7 +567,7 @@ fn runId_printAllGroups(
                 "memory allocation failed",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
     };
     defer allocator.free(group_list);
@@ -589,7 +589,7 @@ fn runId_printAllGroups(
         }
     }
     try stdout_writer.writeByte(delimiter);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Outcome of collecting the current process's supplementary groups.
@@ -662,7 +662,7 @@ fn printSingleGroup(
                 "cannot find name for group ID {d}",
                 .{target_gid},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer allocator.free(info.name);
         try stdout_writer.print("{s}", .{info.name});
@@ -670,7 +670,7 @@ fn printSingleGroup(
         try stdout_writer.print("{d}", .{target_gid});
     }
     try stdout_writer.writeByte(delimiter);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Get the full group list for a named user via getgrouplist(3).
@@ -694,7 +694,7 @@ fn getGroupsForUser(
 
     // Copy the username out of the libc static buffer.
     const name_slice = spanOrEmpty(pw.name);
-    const owned_name = allocator.dupeZ(u8, name_slice) catch return null;
+    const owned_name = allocator.dupeSentinel(u8, name_slice, 0) catch return null;
     defer allocator.free(owned_name);
 
     var ngroups: c_int = 16;
@@ -793,7 +793,7 @@ fn printDefaultGidAndGroups(
     const group_info = common.user_group.getGroupById(gid, allocator) catch {
         try stdout_writer.print(" gid={d}", .{gid});
         try stdout_writer.writeByte(delimiter);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     };
     defer allocator.free(group_info.name);
     try stdout_writer.print(" gid={d}({s})", .{ gid, group_info.name });
@@ -805,14 +805,14 @@ fn printDefaultGidAndGroups(
         getGroupsForUser(uid, @intCast(gid), allocator) orelse {
             try stdout_writer.print(" groups={d}({s})", .{ gid, group_info.name });
             try stdout_writer.writeByte(delimiter);
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         }
     else switch (runId_printAllGroups_currentGroups(allocator)) {
         .list => |list| list,
         .fall_back => {
             try stdout_writer.print(" groups={d}({s})", .{ gid, group_info.name });
             try stdout_writer.writeByte(delimiter);
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         },
         .alloc_failed => {
             common.printErrorWithProgram(
@@ -822,7 +822,7 @@ fn printDefaultGidAndGroups(
                 "memory allocation failed",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
     };
     defer allocator.free(group_list);
@@ -841,7 +841,7 @@ fn printDefaultGidAndGroups(
     }
 
     try stdout_writer.writeByte(delimiter);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Print human-readable format: uid\tusername\ngroups\tgroup1 group2 ...
@@ -880,11 +880,11 @@ fn printPrettyGroups(
         // For specified user, show primary group name
         const gi = common.user_group.getGroupById(gid, allocator) catch {
             try stdout_writer.print("{d}\n", .{gid});
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         };
         defer allocator.free(gi.name);
         try stdout_writer.print("{s}\n", .{gi.name});
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Get supplementary groups for current user
@@ -893,23 +893,23 @@ fn printPrettyGroups(
         // No supplementary groups, show primary
         const gi = common.user_group.getGroupById(gid, allocator) catch {
             try stdout_writer.print("{d}\n", .{gid});
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         };
         defer allocator.free(gi.name);
         try stdout_writer.print("{s}\n", .{gi.name});
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const group_list = allocator.alloc(std.c.gid_t, @intCast(ngroups)) catch {
         try stdout_writer.writeByte('\n');
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     };
     defer allocator.free(group_list);
 
     const actual = getgroups(@intCast(ngroups), group_list.ptr);
     if (actual <= 0) {
         try stdout_writer.writeByte('\n');
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const count: usize = @intCast(actual);
@@ -928,7 +928,7 @@ fn printPrettyGroups(
         try stdout_writer.print("{s}", .{gi.name});
     }
     try stdout_writer.writeByte('\n');
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 pub fn main(init: std.process.Init) !void {

@@ -420,22 +420,22 @@ pub fn runRealpath(
         processed_args.items,
         "realpath",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.positionals.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, "realpath", "missing operand", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // The missing-operand guard above returns before reaching this loop, so at
@@ -449,9 +449,9 @@ pub fn runRealpath(
     }
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Print help message

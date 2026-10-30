@@ -26,7 +26,7 @@
     ] (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        zig = zig-overlay.packages.${system}."0.16.0";
+        zig = zig-overlay.packages.${system}."0.17.0";
       in {
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "vibeutils";

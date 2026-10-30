@@ -320,8 +320,8 @@ fn parseOutputFields(list: []const u8, sel: *OutputSelection) ?OutputFieldError 
 
 /// Numeric fields are right-aligned; name and path fields are not.
 fn outputFieldIsLeftAligned(field: OutputField) bool {
-    std.debug.assert(@intFromEnum(field) >= 0);
-    std.debug.assert(@intFromEnum(field) < output_field_max);
+    std.debug.assert(@backingInt(field) >= 0);
+    std.debug.assert(@backingInt(field) < output_field_max);
     return switch (field) {
         .source, .fstype, .file, .target => true,
         else => false,
@@ -2625,7 +2625,7 @@ pub fn runDf(
 
     if (parsed.err) |msg| {
         common.printErrorWithProgram(allocator, stderr, prog_name, "{s}", .{msg});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     defer allocator.free(opts.positionals);
 
@@ -2644,9 +2644,9 @@ pub fn runDf(
     std.debug.assert(color_mode_int <= 4);
 
     const S = common.style.Style(@TypeOf(stdout));
-    const s = S{ .color_mode = @enumFromInt(color_mode_int), .writer = stdout };
+    const s = S{ .color_mode = @fromBackingInt(@intCast(color_mode_int)), .writer = stdout };
 
-    var exit_code: u8 = @intFromEnum(common.ExitCode.success);
+    var exit_code: u8 = @backingInt(common.ExitCode.success);
 
     // Collect visible filesystems into a list for two-pass rendering.
     // owns_fs_strings tracks whether visible owns the FsInfo string
@@ -2669,7 +2669,7 @@ pub fn runDf(
         .exit_code = &exit_code,
     };
     if (!runDf_collect(allocator, io, opts, stderr, ctx)) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     if (visible.items.len == 0 and exit_code == 0) {
@@ -2733,7 +2733,7 @@ fn runDf_resolveOutput(
             "options {s} and --output are mutually exclusive",
             .{flag},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     if (parseOutputFields(list, sel)) |bad| {
         const reason: []const u8 = switch (bad.kind) {
@@ -2747,7 +2747,7 @@ fn runDf_resolveOutput(
             "option --output: field '{s}' {s}",
             .{ bad.name, reason },
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     return null;
 }
@@ -2759,14 +2759,14 @@ fn runDf_handleHelpVersion(allocator: Allocator, opts: DfOptions, stdout: *std.I
     // set; assert the exclusion without a compound boolean in the assert.
     const both_set = opts.help and opts.version;
     std.debug.assert(!both_set);
-    std.debug.assert(@intFromEnum(common.ExitCode.success) == 0);
+    std.debug.assert(@backingInt(common.ExitCode.success) == 0);
     if (opts.help) {
         printHelp(allocator, stdout) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     if (opts.version) {
         printVersion(stdout) catch {};
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
     return null;
 }
@@ -2780,7 +2780,7 @@ fn runDf_renderInodes(
 ) ?u8 {
     std.debug.assert(opts.inodes);
     std.debug.assert(!opts.help);
-    printHeader(stdout, opts) catch return @intFromEnum(common.ExitCode.general_error);
+    printHeader(stdout, opts) catch return @backingInt(common.ExitCode.general_error);
     for (visible_items) |fs| {
         printFsRow(stdout, fs, opts) catch {};
     }
@@ -2795,10 +2795,10 @@ fn runDf_renderInodes(
 // (16-color) if capability detection fails rather than disabling color.
 fn runDf_resolveColorMode(allocator: Allocator, opts: DfOptions, stdout: *std.Io.Writer) u8 {
     const CM = common.style.Style(@TypeOf(stdout)).ColorMode;
-    comptime std.debug.assert(@intFromEnum(CM.basic) <= 4);
+    comptime std.debug.assert(@backingInt(CM.basic) <= 4);
     const result: u8 = if (opts.display.color == .off) 0 else blk: {
-        const detected = CM.detect(allocator) catch break :blk @intFromEnum(CM.basic);
-        break :blk if (detected == .none) @intFromEnum(CM.basic) else @intFromEnum(detected);
+        const detected = CM.detect(allocator) catch break :blk @backingInt(CM.basic);
+        break :blk if (detected == .none) @backingInt(CM.basic) else @backingInt(detected);
     };
     std.debug.assert(result <= 4);
     return result;
@@ -2880,7 +2880,7 @@ fn runDf_collectFromPositionals(
     exit_code: *u8,
 ) void {
     std.debug.assert(opts.positionals.len > 0);
-    std.debug.assert(exit_code.* == @intFromEnum(common.ExitCode.success));
+    std.debug.assert(exit_code.* == @backingInt(common.ExitCode.success));
     for (opts.positionals) |path| {
         var fs = getFilesystemForPath(io, allocator, path) catch {
             common.printErrorWithProgram(
@@ -2890,7 +2890,7 @@ fn runDf_collectFromPositionals(
                 "cannot access '{s}': No such file or directory",
                 .{path},
             );
-            exit_code.* = @intFromEnum(common.ExitCode.general_error);
+            exit_code.* = @backingInt(common.ExitCode.general_error);
             continue;
         };
         // --output=file reports the operand verbatim, not the resolved
@@ -2974,7 +2974,7 @@ fn runDf_renderDynamic(
     capWidthsToTerminal(allocator, &widths, opts);
 
     printHeaderDynamic(stdout, opts, widths, s) catch
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     for (visible_items) |fs| {
         printFsRowDynamic(stdout, fs, opts, widths, s) catch {};
     }
@@ -3107,7 +3107,7 @@ fn outputWidths(
 ) OutputWidths {
     std.debug.assert(sel.len > 0);
     std.debug.assert(sel.len <= output_field_max);
-    var widths = [_]u32{0} ** output_field_max;
+    var widths = @as([output_field_max]u32, @splat(0));
     var buf: [64]u8 = undefined;
     for (sel.slice(), 0..) |field, idx| {
         widths[idx] = @intCast(outputHeaderText(field, labels).len);
@@ -3282,7 +3282,7 @@ fn runDf_renderOutput(
     const widths = outputWidths(opts, sel, labels, visible_items, totals);
 
     outputEmitHeader(stdout, s, opts, sel, widths, labels) catch
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     for (visible_items) |*fs| {
         outputEmitRow(stdout, s, opts, sel, widths, fs) catch {};
     }

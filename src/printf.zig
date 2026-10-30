@@ -37,12 +37,12 @@ pub fn runPrintf(
     // Check for --help and --version before treating first arg as format
     if (std.mem.eql(u8, args[0], "--help")) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (std.mem.eql(u8, args[0], "--version")) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     const fmt_idx = printfFormatIndex(args) orelse {
@@ -85,16 +85,16 @@ pub fn runPrintf(
     }
 
     if (had_error) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 fn printfMissingOperand(allocator: Allocator, stderr_writer: *std.Io.Writer) u8 {
     const msg = "missing operand\nTry 'printf --help' for more information.";
     std.debug.assert(msg.len > 0);
     common.printErrorWithProgram(allocator, stderr_writer, "printf", msg, .{});
-    const rc = @intFromEnum(common.ExitCode.general_error);
+    const rc = @backingInt(common.ExitCode.general_error);
     std.debug.assert(rc != 0);
     return rc;
 }

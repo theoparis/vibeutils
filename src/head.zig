@@ -129,24 +129,24 @@ pub fn runHead(
         expanded_args,
         "head",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Parse line count, handling negative values (e.g., -n -3 means "all but last 3")
     const lc = try runHead_parseLineCount(allocator, parsed_args.lines, stderr_writer);
-    if (!lc.ok) return @intFromEnum(common.ExitCode.general_error);
+    if (!lc.ok) return @backingInt(common.ExitCode.general_error);
     const line_count = lc.line_count;
     const negative_count = lc.negative_count;
 
@@ -180,7 +180,7 @@ fn runHead_processInputs(
     if (positionals.len == 0) {
         // No files specified, read from stdin
         try processInput(stdin, stdout_writer, options, allocator);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     var had_error = false;
@@ -210,9 +210,9 @@ fn runHead_processInputs(
         }
     }
     if (had_error) {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Result of parsing the -n/--lines argument.

@@ -2,6 +2,11 @@ const std = @import("std");
 const utils = @import("build/utils.zig");
 const man = @import("build/man.zig");
 
+fn absPath(b: *std.Build, sub_path: []const u8) []const u8 {
+    const joined = b.root.joinString(b.allocator, sub_path) catch @panic("OOM");
+    return b.root.root_dir.handle.realPathFileAlloc(b.graph.io, joined, b.allocator) catch @panic("failed to resolve build path");
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -21,7 +26,7 @@ pub fn build(b: *std.Build) void {
     // directory rather than the process cwd: when this package is
     // consumed as a dependency, the build runner's cwd is the
     // top-level project's build root, not this package's root.
-    utils.validateUtilities(b.build_root.handle, b.graph.io) catch |err| {
+    utils.validateUtilities(b.root.root_dir.handle, b.graph.io) catch |err| {
         std.log.err("Utility validation failed: {}", .{err});
         return; // Abort build configuration
     };
@@ -29,7 +34,7 @@ pub fn build(b: *std.Build) void {
     // Build options with version from build.zig.zon using safe parser
     const build_options = b.addOptions();
 
-    const version = utils.parseVersion(b.build_root.handle, b.graph.io, b.allocator) catch |err| {
+    const version = utils.parseVersion(b.root.root_dir.handle, b.graph.io, b.allocator) catch |err| {
         std.log.err("Failed to parse version from build.zig.zon: {}", .{err});
         std.log.err("Ensure build.zig.zon exists and contains a valid .version field", .{});
         return; // Abort build configuration
@@ -58,11 +63,11 @@ pub fn build(b: *std.Build) void {
     // with or without this split. This is hygiene, not a leak fix.)
     const test_options = b.addOptions();
     test_options.addOption([]const u8, "version", version);
-    test_options.addOption([]const u8, "src_dir", b.pathFromRoot("src"));
+    test_options.addOption([]const u8, "src_dir", absPath(b, "src"));
     test_options.addOption(
         []const u8,
         "common_source_dir",
-        b.pathFromRoot("src/common"),
+        absPath(b, "src/common"),
     );
     const test_options_module = test_options.createModule();
 
@@ -75,8 +80,9 @@ pub fn build(b: *std.Build) void {
     });
 
     // Build utilities using metadata-driven approach
-    for (utils.utilities) |util| {
-        buildUtility(b, util, target, optimize, strip, common, build_options_module) catch |err| {
+    var utility_exes: [utils.utilities.len]*std.Build.Step.Compile = undefined;
+    for (utils.utilities, 0..) |util, i| {
+        utility_exes[i] = buildUtility(b, util, target, optimize, strip, common, build_options_module) catch |err| {
             std.log.err("Failed to build utility {s}: {}", .{ util.name, err });
             return; // Abort build configuration
         };
@@ -105,7 +111,7 @@ pub fn build(b: *std.Build) void {
     addCIValidateStep(b, ci);
     addDocsStep(b, target, optimize, common, build_options_module);
     addCoverageStep(b, target, common, build_options_module, test_options_module);
-    addFuzzer(b, target, optimize);
+    addFuzzer(b, target, optimize, &utility_exes);
 }
 
 /// Build a single utility with proper error handling
@@ -119,7 +125,7 @@ fn buildUtility(
     strip: bool,
     common: *std.Build.Module,
     build_options_module: *std.Build.Module,
-) !void {
+) !*std.Build.Step.Compile {
     const exe = b.addExecutable(.{
         .name = util.name,
         .root_module = b.createModule(.{
@@ -142,17 +148,20 @@ fn buildUtility(
 
     b.installArtifact(exe);
 
-    // Create run step with error handling
+    // Create run step with error handling. The build runner forwards CLI
+    // arguments after `--` through the passthru placeholder; stdout/stderr are
+    // inherited so the utility's output is visible as it was before 0.17.
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.stdio = .inherit;
+    run_cmd.addPassthruArgs();
 
     const run_step_name = b.fmt("run-{s}", .{util.name});
     const run_step_desc = b.fmt("Run {s} - {s}", .{ util.name, util.description });
     const run_step = b.step(run_step_name, run_step_desc);
     run_step.dependOn(&run_cmd.step);
+
+    return exe;
 }
 
 /// Configure tests with proper error handling
@@ -261,19 +270,14 @@ fn buildTests(
             util_tests.root_module.addCSourceFile(.{ .file = b.path(c_src) });
         }
 
-        // WORKAROUND: The --listen=- flag breaks under fakeroot
-        // See: https://github.com/ziglang/zig/issues/15091
-        // Run tests directly without the server mode.
-        // Install to test-bin/ (not the default bin/) so these test binaries
-        // never land beside the real utilities — the integration test runner
-        // scans zig-out/bin/ and would otherwise treat each as a utility.
-        const install_util_tests = b.addInstallArtifact(util_tests, .{
-            .dest_dir = .{ .override = .{ .custom = "test-bin" } },
-        });
-        const run_util_tests = b.addSystemCommand(&.{
-            b.getInstallPath(install_util_tests.dest_dir.?, util_tests.out_filename),
-        });
-        run_util_tests.step.dependOn(&install_util_tests.step);
+        // Run the test binary directly. Test-runner protocol mode breaks under
+        // fakeroot (ziglang/zig#15091), so inherit stdio instead. Privileged
+        // test binaries are never installed, so they cannot leak into
+        // zig-out/bin/ where the integration runner would mistake them for
+        // utilities.
+        const run_util_tests = b.addRunArtifact(util_tests);
+        run_util_tests.stdio = .inherit;
+        run_util_tests.addPassthruArgs();
 
         // Chain each test to run after the previous one completes
         if (prev_run_step) |prev| {
@@ -304,15 +308,10 @@ fn buildTests(
     });
     common_tests_priv.root_module.addImport("build_options", test_options_module);
 
-    // Same workaround as above for common library tests; same test-bin/
-    // destination so it stays out of the utility bin dir.
-    const install_common_tests_priv = b.addInstallArtifact(common_tests_priv, .{
-        .dest_dir = .{ .override = .{ .custom = "test-bin" } },
-    });
-    const run_common_tests_priv = b.addSystemCommand(&.{
-        b.getInstallPath(install_common_tests_priv.dest_dir.?, common_tests_priv.out_filename),
-    });
-    run_common_tests_priv.step.dependOn(&install_common_tests_priv.step);
+    // Same direct-run and chaining approach as above for the common tests.
+    const run_common_tests_priv = b.addRunArtifact(common_tests_priv);
+    run_common_tests_priv.stdio = .inherit;
+    run_common_tests_priv.addPassthruArgs();
 
     // Chain common tests to run after all utility tests
     if (prev_run_step) |prev| {
@@ -553,6 +552,7 @@ fn addFuzzer(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
+    utility_exes: []const *std.Build.Step.Compile,
 ) void {
     const fuzz_exe = b.addExecutable(.{
         .name = "fuzz",
@@ -567,20 +567,18 @@ fn addFuzzer(
     // integration test runner would mistake it for a coreutil to test.
     // b.addRunArtifact below builds it from cache without installing.
 
-    for (utils.utilities) |util| {
+    for (utils.utilities, 0..) |util, i| {
         const run_cmd = b.addRunArtifact(fuzz_exe);
         run_cmd.step.dependOn(b.getInstallStep());
 
-        const bin_path = b.getInstallPath(.prefix, b.fmt("bin/{s}", .{util.name}));
-        run_cmd.addArg(bin_path);
+        run_cmd.addFileArg(utility_exes[i].getEmittedBin());
         run_cmd.addArg("--util");
         run_cmd.addArg(util.name);
         run_cmd.addArg("--corpus");
         run_cmd.addArg(b.fmt("tests/fuzz/{s}/corpus", .{util.name}));
         run_cmd.addArg("--crashes");
         run_cmd.addArg(b.fmt("tests/fuzz/{s}/crashes", .{util.name}));
-
-        if (b.args) |a| run_cmd.addArgs(a);
+        run_cmd.addPassthruArgs();
 
         const fuzz_step = b.step(
             b.fmt("fuzz-{s}", .{util.name}),

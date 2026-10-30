@@ -91,13 +91,13 @@ pub fn runCat(
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Resolve flag combinations following GNU cat conventions
@@ -131,9 +131,9 @@ pub fn runCat(
     }
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Maps an argparse error to the general_error exit code, printing the matching
@@ -146,14 +146,14 @@ fn runCat_mapParseError(
 ) !u8 {
     // Compile-time sanity: failure and success are distinct exit codes
     // (positive space).
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) !=
-        @intFromEnum(common.ExitCode.success));
+    std.debug.assert(@backingInt(common.ExitCode.general_error) !=
+        @backingInt(common.ExitCode.success));
     // Negative space: the failure code is never the "no error" sentinel zero.
-    std.debug.assert(@intFromEnum(common.ExitCode.general_error) != 0);
+    std.debug.assert(@backingInt(common.ExitCode.general_error) != 0);
     switch (err) {
         error.UnknownFlag => {
             common.printErrorWithProgram(allocator, stderr, "cat", "unrecognized option", .{});
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.MissingValue => {
             common.printErrorWithProgram(
@@ -163,11 +163,11 @@ fn runCat_mapParseError(
                 "option requires an argument",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         error.InvalidValue => {
             common.printErrorWithProgram(allocator, stderr, "cat", "invalid option value", .{});
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
         else => return err,
     }
@@ -546,7 +546,7 @@ test "cat reads single file" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Hello, world!\n", stdout_aw.writer.buffered());
 }
 
@@ -575,7 +575,7 @@ test "cat concatenates multiple files" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("First file\nSecond file\n", stdout_aw.writer.buffered());
 }
 
@@ -601,7 +601,7 @@ test "cat with -n numbers all lines" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings(
         "     1\tLine 1\n     2\tLine 2\n     3\tLine 3\n",
         stdout_aw.writer.buffered(),
@@ -630,7 +630,7 @@ test "cat with -b numbers non-blank lines" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings(
         "     1\tLine 1\n\n     2\tLine 3\n",
         stdout_aw.writer.buffered(),
@@ -659,7 +659,7 @@ test "cat with -s squeezes blank lines" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Line 1\n\nLine 2\n", stdout_aw.writer.buffered());
 }
 
@@ -685,7 +685,7 @@ test "cat with -E shows ends" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Line 1$\nLine 2$\n", stdout_aw.writer.buffered());
 }
 
@@ -711,7 +711,7 @@ test "cat with -T shows tabs" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("col1^Icol2\n", stdout_aw.writer.buffered());
 }
 
@@ -743,7 +743,7 @@ test "cat handles non-existent file" {
         &stderr_aw.writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expect(stderr_aw.writer.buffered().len > 0);
 }
 
@@ -769,7 +769,7 @@ test "cat with -A shows all (equivalent to -vET)" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Line 1^I$\nLine 2$\n", stdout_aw.writer.buffered());
 }
 
@@ -795,7 +795,7 @@ test "cat with -e shows ends and non-printing (equivalent to -vE)" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Line 1$\nLine 2$\n", stdout_aw.writer.buffered());
 }
 
@@ -821,7 +821,7 @@ test "cat with -t shows tabs and non-printing (equivalent to -vT)" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Line^Iwith^Itabs\n", stdout_aw.writer.buffered());
 }
 
@@ -847,7 +847,7 @@ test "cat with -l flag is ignored" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     // -l should be ignored, so output should be normal
     try testing.expectEqualStrings("Test content\n", stdout_aw.writer.buffered());
 }
@@ -874,7 +874,7 @@ test "cat with -u flag is ignored" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     // -u should be ignored, so output should be normal
     try testing.expectEqualStrings("Test content\n", stdout_aw.writer.buffered());
 }
@@ -902,7 +902,7 @@ test "cat with -A and control characters" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("Test^A^IEnd$\n", stdout_aw.writer.buffered());
 }
 
@@ -911,7 +911,7 @@ test "cat handles very long lines without truncation" {
     defer tmp_dir.deinit();
 
     // Create a line longer than the 8192-byte read buffer
-    const long_line = "A" ** 8192 ++ "\n";
+    const long_line = repeatBytes("A", 8192) ++ "\n";
     try tmp_dir.createFile("test.txt", long_line, null);
 
     const io = testing.io;
@@ -930,7 +930,7 @@ test "cat handles very long lines without truncation" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings(long_line, stdout_aw.writer.buffered());
 }
 
@@ -939,7 +939,7 @@ test "cat with -n handles very long lines correctly" {
     defer tmp_dir.deinit();
 
     // Create a line longer than the 8192-byte read buffer
-    const long_line = "A" ** 8192 ++ "\n";
+    const long_line = repeatBytes("A", 8192) ++ "\n";
     try tmp_dir.createFile("test.txt", long_line, null);
 
     const io = testing.io;
@@ -958,10 +958,10 @@ test "cat with -n handles very long lines correctly" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
 
     // Verify line number appears only once at the beginning
-    const expected = "     1\t" ++ "A" ** 8192 ++ "\n";
+    const expected = "     1\t" ++ repeatBytes("A", 8192) ++ "\n";
     try testing.expectEqualStrings(expected, stdout_aw.writer.buffered());
 }
 
@@ -1004,7 +1004,7 @@ test "cat continues processing files after error" {
     );
 
     // Should return error exit code due to nonexistent file
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
 
     // But should have processed the good file
     try testing.expectEqualStrings("Good content\n", stdout_aw.writer.buffered());
@@ -1040,7 +1040,7 @@ test "cat -E renders trailing CR as ^M$ on CRLF lines" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     // Expected: "test^M$\n" — the \r is shown as ^M before the $ end marker
     try testing.expectEqualStrings("test^M$\n", stdout_aw.writer.buffered());
 }
@@ -1070,7 +1070,7 @@ test "cat -E preserves mid-line CR as raw byte" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     // Mid-line \r stays as raw \r, only the $ end marker is added
     try testing.expectEqualStrings("ab\rcd$\n", stdout_aw.writer.buffered());
 }
@@ -1098,7 +1098,7 @@ test "cat -E with multiple CRLF lines" {
         common.null_writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.success)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.success)), exit_code);
     try testing.expectEqualStrings("line1^M$\nline2^M$\nline3$\n", stdout_aw.writer.buffered());
 }
 
@@ -1122,7 +1122,7 @@ test "cat permission hint follows stderr hint overlay" {
     file.close(testing.io);
     const file_path = try tmp.getPath("secret.txt");
     defer testing.allocator.free(file_path);
-    const file_path_z = try testing.allocator.dupeZ(u8, file_path);
+    const file_path_z = try testing.allocator.dupeSentinel(u8, file_path, 0);
     defer testing.allocator.free(file_path_z);
     if (std.c.chmod(file_path_z, 0o000) != 0) return error.SkipZigTest;
     defer _ = std.c.chmod(file_path_z, 0o644);
@@ -1144,7 +1144,7 @@ test "cat permission hint follows stderr hint overlay" {
         .{file_path},
     );
     defer testing.allocator.free(expected_plain);
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), plain_exit);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), plain_exit);
     try testing.expectEqualStrings(expected_plain, stderr_plain.writer.buffered());
 
     common.env.test_stderr_hints = true;
@@ -1163,6 +1163,18 @@ test "cat permission hint follows stderr hint overlay" {
         .{file_path},
     );
     defer testing.allocator.free(expected_hints);
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), hints_exit);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), hints_exit);
     try testing.expectEqualStrings(expected_hints, stderr_hints.writer.buffered());
+}
+
+/// Repeat `pattern` `count` times at comptime. Replaces the removed `**`
+/// array-repeat operator from earlier Zig versions.
+fn repeatBytes(comptime pattern: []const u8, comptime count: usize) *const [pattern.len * count]u8 {
+    @setEvalBranchQuota(pattern.len * count + 1024);
+    const result = comptime blk: {
+        var r: [pattern.len * count]u8 = undefined;
+        for (&r, 0..) |*byte, i| byte.* = pattern[i % pattern.len];
+        break :blk r;
+    };
+    return &result;
 }

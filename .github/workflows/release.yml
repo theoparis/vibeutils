@@ -39,7 +39,7 @@ jobs:
 
       - uses: ./.github/actions/setup-zig
         with:
-          version: 0.16.0
+          version: 0.17.0
 
       - name: Extract version
         id: version

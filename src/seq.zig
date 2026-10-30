@@ -819,21 +819,21 @@ fn run_resolveOperands(
 ) ResolvedOperands {
     if (positionals.len == 0) {
         common.printErrorWithProgram(allocator, stderr_writer, "seq", "missing operand", .{});
-        return .{ .exit_code = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit_code = @backingInt(common.ExitCode.general_error) };
     }
     if (positionals.len > 3) {
         const m = "extra operand '{s}'";
         common.printErrorWithProgram(allocator, stderr_writer, "seq", m, .{positionals[3]});
-        return .{ .exit_code = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit_code = @backingInt(common.ExitCode.general_error) };
     }
 
     const operands = run_parseOperands(allocator, stderr_writer, positionals) orelse
-        return .{ .exit_code = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit_code = @backingInt(common.ExitCode.general_error) };
 
     if (operands.increment == 0.0) {
         const m = "invalid Zero increment value: '{s}'";
         common.printErrorWithProgram(allocator, stderr_writer, "seq", m, .{operands.incr_str});
-        return .{ .exit_code = @intFromEnum(common.ExitCode.general_error) };
+        return .{ .exit_code = @backingInt(common.ExitCode.general_error) };
     }
 
     std.debug.assert(operands.increment != 0.0);
@@ -867,19 +867,19 @@ fn run(
         processed_args,
         "seq",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate count, parse FIRST/INCREMENT/LAST, reject zero increment.
@@ -907,7 +907,7 @@ fn run(
         use_format,
     );
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Print a single number with the appropriate formatting

@@ -87,7 +87,7 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed.positionals);
 
     // Handle --help/--version and the too-many-templates guard up front. Each
@@ -158,12 +158,12 @@ fn run_handleEarlyExit(
 ) !?u8 {
     if (parsed.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Too many positional arguments
@@ -175,7 +175,7 @@ fn run_handleEarlyExit(
             "too many templates\nTry 'mktemp --help' for more information.",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     return null;
@@ -254,12 +254,12 @@ fn run_emitResult(
         const kind = if (parsed.directory) "directory" else "file";
         const fmt = "failed to create {s} via template '{s}'";
         run_reportError(allocator, stderr_writer, parsed.quiet, fmt, .{ kind, full_template });
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
 
     try stdout_writer.print("{s}\n", .{result_path});
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Validate the explicit suffix, the X count, and the `-t` template before
@@ -286,19 +286,19 @@ fn run_validate(
     if (std.mem.findScalar(u8, explicit_suffix, '/') != null) {
         const fmt = "invalid suffix '{s}': contains directory separator";
         run_reportError(allocator, stderr_writer, quiet, fmt, .{explicit_suffix});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     // Template must contain at least three X's.
     if (xs.x_count < 3) {
         const fmt = "too few X's in template '{s}'";
         run_reportError(allocator, stderr_writer, quiet, fmt, .{raw_template});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     // With -t, the template must not contain a directory separator.
     if (parsed.t and std.mem.findScalar(u8, raw_template, '/') != null) {
         const fmt = "invalid template, '{s}', contains directory separator";
         run_reportError(allocator, stderr_writer, quiet, fmt, .{raw_template});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     return null;
 }
@@ -329,11 +329,11 @@ fn run_reportBuildError(
     quiet: bool,
     err: error{ ResolveTmpdir, AllocPrintFailed },
 ) u8 {
-    const general_error = @intFromEnum(common.ExitCode.general_error);
+    const general_error = @backingInt(common.ExitCode.general_error);
     // Sanity check: the general error code is the conventional 1...
     std.debug.assert(general_error == 1);
     // ...and is distinct from the success code we never return here.
-    std.debug.assert(general_error != @intFromEnum(common.ExitCode.success));
+    std.debug.assert(general_error != @backingInt(common.ExitCode.success));
     switch (err) {
         error.ResolveTmpdir => {
             const fmt = "failed to resolve temporary directory";

@@ -85,19 +85,19 @@ fn run(
         args,
         prog_name,
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try stdout_writer.print("touch ({s}) {s}\n", .{ common.name, common.version });
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // -A flag is a macOS-only feature (adjust timestamps by relative offset).
@@ -122,7 +122,7 @@ fn run(
             "missing file operand\nTry '{s} --help' for more information.",
             .{prog_name},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Process files - continue even if one fails (GNU touch behavior)
@@ -135,9 +135,9 @@ fn run(
     }
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Builds the TouchOptions struct from parsed command-line arguments,
@@ -490,7 +490,7 @@ fn updateFileTimes(
     if (!no_dereference) std.debug.assert(flags == 0);
 
     // Allocate path buffer dynamically
-    const path_z = try allocator.dupeZ(u8, path);
+    const path_z = try allocator.dupeSentinel(u8, path, 0);
     defer allocator.free(path_z);
     // dupeZ copies path and appends a sentinel excluded from len, so the
     // duplicated slice length always equals the source length.

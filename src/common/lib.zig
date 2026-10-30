@@ -220,7 +220,7 @@ pub fn fatalWithWriter(
     _ = io; // reserved for future use (e.g. draining async tasks before exit)
     stderr_writer.print("{s}: " ++ fmt ++ "\n", .{prog_name} ++ fmt_args) catch {};
     stderr_writer.flush() catch {};
-    std.process.exit(@intFromEnum(ExitCode.general_error));
+    std.process.exit(@backingInt(ExitCode.general_error));
 }
 
 /// DEPRECATED: Use printErrorWithWriter() instead
@@ -287,8 +287,8 @@ pub const HintOp = enum { read, write };
 
 /// Suffix for a TTY diagnostic, or null.
 pub fn actionableHint(err: anyerror, operand: []const u8, op: HintOp) ?[]const u8 {
-    std.debug.assert(@intFromEnum(op) <= @intFromEnum(HintOp.write));
-    std.debug.assert(@intFromEnum(op) >= @intFromEnum(HintOp.read));
+    std.debug.assert(@backingInt(op) <= @backingInt(HintOp.write));
+    std.debug.assert(@backingInt(op) >= @backingInt(HintOp.read));
     return switch (err) {
         error.DirNotEmpty => " (use rm -r to remove recursively)",
         error.AccessDenied => ownedModeHint(operand, op),
@@ -297,7 +297,7 @@ pub fn actionableHint(err: anyerror, operand: []const u8, op: HintOp) ?[]const u
 }
 
 fn ownedModeHint(operand: []const u8, op: HintOp) ?[]const u8 {
-    std.debug.assert(@intFromEnum(op) <= @intFromEnum(HintOp.write));
+    std.debug.assert(@backingInt(op) <= @backingInt(HintOp.write));
     if (std.c.geteuid() == 0) return null;
     const info = file.FileInfo.lstat(operand) catch return null;
     if (info.uid != @as(u32, @intCast(std.c.geteuid()))) return null;
@@ -313,8 +313,8 @@ fn ownedModeHint(operand: []const u8, op: HintOp) ?[]const u8 {
 /// Combine the TTY seam with `actionableHint`. Call sites append
 /// `maybeHint(...) orelse ""`.
 pub fn maybeHint(err: anyerror, operand: []const u8, op: HintOp) ?[]const u8 {
-    std.debug.assert(@intFromEnum(op) <= @intFromEnum(HintOp.write));
-    std.debug.assert(@intFromEnum(op) >= @intFromEnum(HintOp.read));
+    std.debug.assert(@backingInt(op) <= @backingInt(HintOp.write));
+    std.debug.assert(@backingInt(op) >= @backingInt(HintOp.read));
     if (!env.stderrHintsEnabled()) return null;
     return actionableHint(err, operand, op);
 }
@@ -437,7 +437,7 @@ pub fn posixErrorString(err: anyerror) []const u8 {
 test "common library basics" {
     // Test that we can import and use basic functionality
     const ec = ExitCode.success;
-    try std.testing.expectEqual(@as(u8, 0), @intFromEnum(ec));
+    try std.testing.expectEqual(@as(u8, 0), @backingInt(ec));
 }
 
 test "utilities must use writerStreaming not writer for stdout/stderr (issue #5)" {

@@ -21,7 +21,7 @@ pub fn runTrue(
     _ = stdout_writer;
     _ = stderr_writer;
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Standard main function - minimal since true never outputs

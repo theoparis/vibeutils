@@ -23,12 +23,12 @@ pub fn realPathLibc(path: []const u8, out: []u8) !usize {
     @memset(&dest, 0);
     const resolved = std.c.realpath(&src, &dest) orelse {
         return switch (std.c._errno().*) {
-            @intFromEnum(std.c.E.NOENT) => error.FileNotFound,
-            @intFromEnum(std.c.E.NOTDIR) => error.NotDir,
-            @intFromEnum(std.c.E.ACCES) => error.AccessDenied,
-            @intFromEnum(std.c.E.NAMETOOLONG) => error.NameTooLong,
-            @intFromEnum(std.c.E.LOOP) => error.SymLinkLoop,
-            @intFromEnum(std.c.E.NOMEM) => error.SystemResources,
+            @backingInt(std.c.E.NOENT) => error.FileNotFound,
+            @backingInt(std.c.E.NOTDIR) => error.NotDir,
+            @backingInt(std.c.E.ACCES) => error.AccessDenied,
+            @backingInt(std.c.E.NAMETOOLONG) => error.NameTooLong,
+            @backingInt(std.c.E.LOOP) => error.SymLinkLoop,
+            @backingInt(std.c.E.NOMEM) => error.SystemResources,
             else => error.Unexpected,
         };
     };

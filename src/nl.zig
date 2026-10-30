@@ -198,7 +198,7 @@ fn parseNumberingStyleFull(s: []const u8, allocator: Allocator) ?NumberingStyle 
     if (parseNumberingStyle(s)) |style| return style;
     if (s.len >= 1 and s[0] == 'p') {
         const pattern = s[1..];
-        const pattern_z = allocator.dupeZ(u8, pattern) catch return null;
+        const pattern_z = allocator.dupeSentinel(u8, pattern, 0) catch return null;
         defer allocator.free(pattern_z);
         const rf = posix_regex.flags();
         const cflags: c_int = rf.nosub | rf.extended;
@@ -708,7 +708,7 @@ fn processLine_styleRegex(
     } else {
         state.blank_count = 0;
         // Match against the compiled regex
-        const line_z = allocator.dupeZ(u8, line) catch {
+        const line_z = allocator.dupeSentinel(u8, line, 0) catch {
             try writeUnnumberedLine(writer, line, opts);
             return;
         };
@@ -841,24 +841,24 @@ pub fn runNl(
         args,
         "nl",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Resolve options
     const opts = resolveOptions(parsed_args, stderr_writer, allocator) catch {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     } orelse {
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     // Free compiled regex patterns to prevent leaks
     defer runNl_freeRegexStyles(opts, allocator);
@@ -875,9 +875,9 @@ pub fn runNl(
     );
 
     return if (has_error)
-        @intFromEnum(common.ExitCode.general_error)
+        @backingInt(common.ExitCode.general_error)
     else
-        @intFromEnum(common.ExitCode.success);
+        @backingInt(common.ExitCode.success);
 }
 
 /// Process all inputs (stdin or named files) for nl, reporting per-input errors.

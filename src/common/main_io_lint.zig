@@ -37,7 +37,7 @@ pub fn collectMissingNeedles(
     assert(needles.len == 4);
     assert(missing.items.len == 0);
 
-    var found = [_]bool{false} ** needles.len;
+    var found = @as([needles.len]bool, @splat(false));
     markFoundNeedles(source, &found);
 
     var i: u32 = 0;

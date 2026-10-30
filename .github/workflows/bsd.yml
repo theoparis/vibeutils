@@ -17,7 +17,7 @@ concurrency:
   group: bsd-${{ github.ref }}
   cancel-in-progress: true
 
-# Official Zig 0.16.0 tarballs, not mlugg/setup-zig: that action is
+# Official Zig 0.17.0 tarballs, not mlugg/setup-zig: that action is
 # Linux/macOS only and cannot run inside the BSD guest. Jobs are
 # independent (no matrix) so a red OS is a real workflow failure.
 #
@@ -62,13 +62,13 @@ jobs:
             set -eu
             pkg install -y curl fakeroot perl5
             curl -fsSL -o /tmp/zig.tar.xz \
-              https://ziglang.org/download/0.16.0/zig-x86_64-freebsd-0.16.0.tar.xz
+              https://ziglang.org/download/0.17.0/zig-x86_64-freebsd-0.17.0.tar.xz
             mkdir -p /usr/local/bin
             tar -xf /tmp/zig.tar.xz -C /usr/local
-            ln -sf /usr/local/zig-x86_64-freebsd-0.16.0/zig /usr/local/bin/zig
+            ln -sf /usr/local/zig-x86_64-freebsd-0.17.0/zig /usr/local/bin/zig
           run: |
             set -eu
-            export PATH="/usr/local/zig-x86_64-freebsd-0.16.0:/usr/local/bin:$PATH"
+            export PATH="/usr/local/zig-x86_64-freebsd-0.17.0:/usr/local/bin:$PATH"
             zig build test
             # ETXTBSY/FileBusy under fakeroot can hang the Zig runner
             # after spawn failure (56m on tail_privileged_test). Retry
@@ -133,13 +133,13 @@ jobs:
             pkg_add xz
             export PATH="/usr/local/bin:$PATH"
             curl -fsSL -o /tmp/zig.tar.xz \
-              https://ziglang.org/download/0.16.0/zig-x86_64-openbsd-0.16.0.tar.xz
+              https://ziglang.org/download/0.17.0/zig-x86_64-openbsd-0.17.0.tar.xz
             mkdir -p /usr/local/bin
             xz -dc /tmp/zig.tar.xz | tar -xf - -C /usr/local
-            ln -sf /usr/local/zig-x86_64-openbsd-0.16.0/zig /usr/local/bin/zig
+            ln -sf /usr/local/zig-x86_64-openbsd-0.17.0/zig /usr/local/bin/zig
           run: |
             set -eu
-            export PATH="/usr/local/zig-x86_64-openbsd-0.16.0:/usr/local/bin:$PATH"
+            export PATH="/usr/local/zig-x86_64-openbsd-0.17.0:/usr/local/bin:$PATH"
             zig build test
 
   netbsd:
@@ -162,11 +162,11 @@ jobs:
             pkg_add xz
             export PATH="/usr/pkg/bin:/usr/local/bin:$PATH"
             curl -fsSL -o /tmp/zig.tar.xz \
-              https://ziglang.org/download/0.16.0/zig-x86_64-netbsd-0.16.0.tar.xz
+              https://ziglang.org/download/0.17.0/zig-x86_64-netbsd-0.17.0.tar.xz
             mkdir -p /usr/local/bin
             xz -dc /tmp/zig.tar.xz | tar -xf - -C /usr/local
-            ln -sf /usr/local/zig-x86_64-netbsd-0.16.0/zig /usr/local/bin/zig
+            ln -sf /usr/local/zig-x86_64-netbsd-0.17.0/zig /usr/local/bin/zig
           run: |
             set -eu
-            export PATH="/usr/local/zig-x86_64-netbsd-0.16.0:/usr/pkg/bin:/usr/local/bin:$PATH"
+            export PATH="/usr/local/zig-x86_64-netbsd-0.17.0:/usr/pkg/bin:/usr/local/bin:$PATH"
             zig build test

@@ -44,7 +44,7 @@ pub fn runWhoami(
         args,
         "whoami",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // GNU acts on whichever of --help and --version comes first, so when both
@@ -60,7 +60,7 @@ pub fn runWhoami(
         } else {
             try printHelp(allocator, stdout_writer);
         }
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Reject extra positional arguments
@@ -72,7 +72,7 @@ pub fn runWhoami(
             "extra operand '{s}'\nTry 'whoami --help' for more information.",
             .{parsed_args.positionals[0]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Look up the effective user, which is the identity whoami reports.
@@ -85,12 +85,12 @@ pub fn runWhoami(
             "cannot find name for user ID {d}",
             .{uid},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer allocator.free(user_info.name);
 
     try stdout_writer.print("{s}\n", .{user_info.name});
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Report whether --version (or -V) appears before --help (or -h) in the raw

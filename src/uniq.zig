@@ -113,7 +113,7 @@ fn runUniq_preprocessAllRepeated(
                         "\n  - 'none'\n  - 'prepend'\n  - 'separate'",
                     .{method_str},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             if (method_out.* == .off) {
                 common.printErrorWithProgram(
@@ -124,7 +124,7 @@ fn runUniq_preprocessAllRepeated(
                         "\n  - 'none'\n  - 'prepend'\n  - 'separate'",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             }
             cleaned_args.appendAssumeCapacity("--all-repeated");
         } else if (std.mem.startsWith(u8, arg, "-D=")) {
@@ -138,7 +138,7 @@ fn runUniq_preprocessAllRepeated(
                         "\n  - 'none'\n  - 'prepend'\n  - 'separate'",
                     .{method_str},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
             if (method_out.* == .off) {
                 common.printErrorWithProgram(
@@ -149,7 +149,7 @@ fn runUniq_preprocessAllRepeated(
                         "\n  - 'none'\n  - 'prepend'\n  - 'separate'",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             }
             cleaned_args.appendAssumeCapacity("-D");
         } else {
@@ -189,7 +189,7 @@ fn runUniq_dispatchOutput(
                 out_path,
                 common.posixErrorString(err),
             });
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer output_file.close(io);
 
@@ -232,7 +232,7 @@ fn runUniq_dispatchInput(
                 path,
                 common.posixErrorString(err),
             });
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         defer input_file.close(io);
 
@@ -303,7 +303,7 @@ pub fn runUniq(
         cleaned_args.items,
         "uniq",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Set the all_repeated_method from pre-processing.
@@ -311,12 +311,12 @@ pub fn runUniq(
 
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Validate positional count: at most 2 (INPUT, OUTPUT)
@@ -328,7 +328,7 @@ pub fn runUniq(
             "extra operand '{s}'\nTry 'uniq --help' for more information.",
             .{parsed_args.positionals[2]},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
     std.debug.assert(parsed_args.positionals.len <= 2);
 
@@ -431,11 +431,11 @@ fn runUniqWithInput(
         const line = readLine(allocator, reader, delimiter) catch |err| switch (err) {
             error.OutOfMemory => {
                 runUniqWithInput_reportReadError(allocator, stderr_writer, err);
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
             else => {
                 runUniqWithInput_reportReadError(allocator, stderr_writer, err);
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             },
         };
 
@@ -464,7 +464,7 @@ fn runUniqWithInput(
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Read one line delimited by `delimiter`. Returns null on EOF.

@@ -106,7 +106,7 @@ fn runEnv_parseError(
                 "unrecognized option\nTry 'env --help' for more information.",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.internal_error);
+            return @backingInt(common.ExitCode.internal_error);
         },
         error.MissingValue => {
             common.printErrorWithProgram(
@@ -116,11 +116,11 @@ fn runEnv_parseError(
                 "option requires an argument\nTry 'env --help' for more information.",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.internal_error);
+            return @backingInt(common.ExitCode.internal_error);
         },
         error.OutOfMemory => {
             common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         },
     }
 }
@@ -177,7 +177,7 @@ pub fn runEnv(
             "failed to build environment: {s}",
             .{common.posixErrorString(err)},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     defer env_map.deinit();
 
@@ -211,7 +211,7 @@ fn runEnv_handleSplitString(
         if (in_command) {
             split_command.append(allocator, token) catch {
                 common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
         } else if (std.mem.indexOfScalar(u8, token, '=')) |eq_pos| {
             split_assignments.append(allocator, .{
@@ -219,14 +219,14 @@ fn runEnv_handleSplitString(
                 .value = token[eq_pos + 1 ..],
             }) catch {
                 common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
         } else {
             // First non-assignment token starts the command
             in_command = true;
             split_command.append(allocator, token) catch {
                 common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             };
         }
     }
@@ -267,14 +267,14 @@ fn runEnv_handleSplitString_mergeAssignments(
     for (options.assignments) |a| {
         merged.append(allocator, a) catch {
             common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
     }
     // Then -S assignments
     for (split_assignments) |a| {
         merged.append(allocator, a) catch {
             common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
     }
     // Free old owned assignments before replacing
@@ -283,7 +283,7 @@ fn runEnv_handleSplitString_mergeAssignments(
     }
     options.assignments = merged.toOwnedSlice(allocator) catch {
         common.printErrorWithProgram(allocator, stderr_writer, "env", "out of memory", .{});
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     };
     // Postcondition: merged holds the original assignments followed by all
     // split_assignments, so its length is at least split_assignments.len.
@@ -340,7 +340,7 @@ fn runEnv_finishCommand(
     // If no command, print the environment
     if (options.command.len == 0) {
         printEnvironment(stdout_writer, env_map, options.null_delimiter) catch {
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
         return 0;
     }
@@ -361,7 +361,7 @@ fn runEnv_finishCommand(
                 "failed to set alternate PATH",
                 .{},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         };
     }
 
@@ -738,8 +738,8 @@ fn execCommand(
 
     return switch (result) {
         .exited => |code| code,
-        .signal => |signal| @as(u8, @intCast(@min(@intFromEnum(signal) + 128, 255))),
-        .stopped => |signal| @as(u8, @intCast(@min(@intFromEnum(signal) + 128, 255))),
+        .signal => |signal| @as(u8, @intCast(@min(@backingInt(signal) + 128, 255))),
+        .stopped => |signal| @as(u8, @intCast(@min(@backingInt(signal) + 128, 255))),
         .unknown => |code| @as(u8, @intCast(@min(code, 255))),
     };
 }

@@ -128,18 +128,18 @@ pub fn runChown(
         args,
         "chown",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
 
     // Handle information requests (help/version) - these exit immediately
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Get positional arguments for further processing
@@ -156,7 +156,7 @@ pub fn runChown(
         positionals,
         parsed_args.reference != null,
         stderr_writer,
-    ) orelse return @intFromEnum(common.ExitCode.general_error);
+    ) orelse return @backingInt(common.ExitCode.general_error);
     const owner_spec = ops.owner_spec;
     const files = ops.files;
 
@@ -174,7 +174,7 @@ pub fn runChown(
         options,
         owner_spec,
         stderr_writer,
-    )) orelse return @intFromEnum(common.ExitCode.general_error);
+    )) orelse return @backingInt(common.ExitCode.general_error);
 
     // Process each file with pre-parsed ownership
     return runChown_processFiles(
@@ -293,7 +293,7 @@ fn runChown_validate(
                         "Use --no-preserve-root to override this failsafe.",
                     .{},
                 );
-                return @intFromEnum(common.ExitCode.general_error);
+                return @backingInt(common.ExitCode.general_error);
             }
         }
     }
@@ -308,7 +308,7 @@ fn runChown_validate(
                 "invalid spec: '{s}' (numeric IDs only with -n)",
                 .{owner_spec},
             );
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
     }
 
@@ -381,8 +381,8 @@ fn runChown_processFiles(
     // there is always at least one file to process here.
     assert(files.len >= 1);
     // The exit code starts at success and only ever moves to general_error.
-    assert(@intFromEnum(common.ExitCode.success) == 0);
-    assert(@intFromEnum(common.ExitCode.general_error) != 0);
+    assert(@backingInt(common.ExitCode.success) == 0);
+    assert(@backingInt(common.ExitCode.general_error) != 0);
 
     var exit_code: u8 = 0;
     for (files) |file_path| {
@@ -396,7 +396,7 @@ fn runChown_processFiles(
                 stdout_writer,
                 stderr_writer,
             ) catch {
-                exit_code = @intFromEnum(common.ExitCode.general_error);
+                exit_code = @backingInt(common.ExitCode.general_error);
             };
         } else {
             chownSingle(
@@ -409,14 +409,14 @@ fn runChown_processFiles(
                 stderr_writer,
             ) catch |err| {
                 handleError(allocator, file_path, err, options, stderr_writer);
-                exit_code = @intFromEnum(common.ExitCode.general_error);
+                exit_code = @backingInt(common.ExitCode.general_error);
             };
         }
     }
 
     // Exit code is either success or general_error, never any other value.
     const is_success = exit_code == 0;
-    const is_general_error = exit_code == @intFromEnum(common.ExitCode.general_error);
+    const is_general_error = exit_code == @backingInt(common.ExitCode.general_error);
     const is_known_code = is_success or is_general_error;
     assert(is_known_code);
     return exit_code;
@@ -786,7 +786,7 @@ fn changeOwnership(
     options: ChownOptions,
 ) !void {
     // Convert path to null-terminated string for system call
-    const path_c = try allocator.dupeZ(u8, path);
+    const path_c = try allocator.dupeSentinel(u8, path, 0);
     defer allocator.free(path_c);
 
     // Choose between chown and lchown based on no_dereference option
@@ -799,16 +799,16 @@ fn changeOwnership(
         // Map errno to appropriate Zig error
         const errno = std.c._errno().*;
         return switch (errno) {
-            @intFromEnum(std.c.E.NOENT) => error.FileNotFound,
-            @intFromEnum(std.c.E.ACCES) => error.PermissionDenied,
-            @intFromEnum(std.c.E.PERM) => error.PermissionDenied,
-            @intFromEnum(std.c.E.NOTDIR) => error.NotDir,
-            @intFromEnum(std.c.E.LOOP) => error.SymLinkLoop,
-            @intFromEnum(std.c.E.NAMETOOLONG) => error.NameTooLong,
-            @intFromEnum(std.c.E.ROFS) => error.ReadOnlyFileSystem,
-            @intFromEnum(std.c.E.INVAL) => error.InvalidValue,
-            @intFromEnum(std.c.E.IO) => error.InputOutputError,
-            @intFromEnum(std.c.E.NOMEM) => error.SystemResources,
+            @backingInt(std.c.E.NOENT) => error.FileNotFound,
+            @backingInt(std.c.E.ACCES) => error.PermissionDenied,
+            @backingInt(std.c.E.PERM) => error.PermissionDenied,
+            @backingInt(std.c.E.NOTDIR) => error.NotDir,
+            @backingInt(std.c.E.LOOP) => error.SymLinkLoop,
+            @backingInt(std.c.E.NAMETOOLONG) => error.NameTooLong,
+            @backingInt(std.c.E.ROFS) => error.ReadOnlyFileSystem,
+            @backingInt(std.c.E.INVAL) => error.InvalidValue,
+            @backingInt(std.c.E.IO) => error.InputOutputError,
+            @backingInt(std.c.E.NOMEM) => error.SystemResources,
             else => error.Unexpected,
         };
     }
@@ -1724,7 +1724,7 @@ test "chown -n flag rejects non-numeric owner spec" {
         &stderr_aw.writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expect(std.mem.find(u8, stderr_aw.writer.buffered(), "numeric IDs only") != null);
 }
 
@@ -1770,7 +1770,7 @@ test "chown --preserve-root blocks recursive on /" {
         &stderr_aw.writer,
     );
 
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), exit_code);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), exit_code);
     try testing.expect(std.mem.find(
         u8,
         stderr_aw.writer.buffered(),

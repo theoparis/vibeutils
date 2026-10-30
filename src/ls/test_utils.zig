@@ -268,7 +268,7 @@ pub const LsTestEnv = struct {
         const file = try self.tmp_dir.dir().createFile(std.testing.io, name, .{});
         file.close(std.testing.io);
         // Set executable bit via fchmodat relative to the tmp dir
-        const name_z = try std.testing.allocator.dupeZ(u8, name);
+        const name_z = try std.testing.allocator.dupeSentinel(u8, name, 0);
         defer std.testing.allocator.free(name_z);
         _ = std.c.fchmodat(self.tmp_dir.dir().handle, name_z, 0o755, 0);
     }

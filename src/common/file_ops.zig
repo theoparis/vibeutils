@@ -79,12 +79,12 @@ pub fn setPermissions(
         // the operation since the file operation itself succeeded.
         if (builtin.os.tag == .macos) {
             setPermissionsWarnMacosFailed(allocator, stderr_writer, program_name, context, err);
-            return @intFromEnum(lib.ExitCode.success);
+            return @backingInt(lib.ExitCode.success);
         }
-        return @intFromEnum(lib.ExitCode.general_error);
+        return @backingInt(lib.ExitCode.general_error);
     }
 
-    return @intFromEnum(lib.ExitCode.success);
+    return @backingInt(lib.ExitCode.success);
 }
 
 /// Warn that special permission bits were stripped under Linux fakeroot.
@@ -476,7 +476,7 @@ fn copyFileWithAttributesPreserveOwnerAndMode(
     if (fchown_result != 0) {
         const errno = std.c._errno().*;
         switch (errno) {
-            @intFromEnum(std.c.E.PERM) => {}, // Non-root; silently ignore.
+            @backingInt(std.c.E.PERM) => {}, // Non-root; silently ignore.
             else => {
                 lib.printWarningWithProgram(
                     allocator,
@@ -499,7 +499,7 @@ fn copyFileWithAttributesPreserveOwnerAndMode(
         program_name,
         stderr_writer,
     );
-    if (chmod_status != @intFromEnum(lib.ExitCode.success)) {
+    if (chmod_status != @backingInt(lib.ExitCode.success)) {
         lib.printErrorWithProgram(
             allocator,
             stderr_writer,

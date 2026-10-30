@@ -34,11 +34,11 @@ pub fn runEcho(
     for (args, 0..) |arg, i| {
         if (std.mem.eql(u8, arg, "--help")) {
             try printHelp(allocator, stdout_writer);
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         }
         if (std.mem.eql(u8, arg, "--version")) {
             try printVersion(stdout_writer);
-            return @intFromEnum(common.ExitCode.success);
+            return @backingInt(common.ExitCode.success);
         }
 
         // Must start with '-' and have at least one character after it
@@ -85,7 +85,7 @@ pub fn runEcho(
     };
 
     try echoStrings(positionals, stdout_writer, options);
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// CLI entry point — parses process arguments and sets up I/O buffers.

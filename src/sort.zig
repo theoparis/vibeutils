@@ -567,17 +567,17 @@ pub fn runSort(
     stderr_writer: *std.Io.Writer,
 ) !u8 {
     var opts = (try parseArgs(allocator, args, stderr_writer)) orelse
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     defer opts.deinit(allocator);
 
     if (opts.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     if (opts.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle --files0-from: read input filenames from a NUL-delimited file.
@@ -634,7 +634,7 @@ pub fn runSort(
     );
     if (write_result) |code| return code;
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Expand --files0-from: read NUL-delimited filenames into opts.files.
@@ -657,7 +657,7 @@ fn runSort_expandFiles0From(
             "extra operand '{s}'\nfile operands cannot be combined with --files0-from",
             .{opts.files.items[0]},
         );
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     }
     const is_stdin = std.mem.eql(u8, f0f_path, "-");
     const f0f_file = if (is_stdin)
@@ -671,7 +671,7 @@ fn runSort_expandFiles0From(
                 "cannot open '{s}' for reading: {s}",
                 .{ f0f_path, common.posixErrorString(err) },
             );
-            return @intFromEnum(common.ExitCode.serious_error);
+            return @backingInt(common.ExitCode.serious_error);
         };
     defer if (!is_stdin) f0f_file.close(io);
     var f0f_buf: [8192]u8 = undefined;
@@ -684,7 +684,7 @@ fn runSort_expandFiles0From(
             "cannot read '{s}': {s}",
             .{ f0f_path, common.posixErrorString(err) },
         );
-        return @intFromEnum(common.ExitCode.serious_error);
+        return @backingInt(common.ExitCode.serious_error);
     };
     var it = std.mem.splitScalar(u8, content, 0);
     while (it.next()) |name| {
@@ -734,7 +734,7 @@ fn runSort_runMerge(
                     "cannot read: {s}: {s}",
                     .{ file_path, common.posixErrorString(err) },
                 );
-                return @intFromEnum(common.ExitCode.serious_error);
+                return @backingInt(common.ExitCode.serious_error);
             };
             defer file.close(io);
             try readLines(allocator, io, file, &file_lines, delimiter, &merge_buffers);
@@ -765,7 +765,7 @@ fn runSort_runMerge(
         return code;
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Read all lines from stdin or the given files into `lines`, keeping the
@@ -803,7 +803,7 @@ fn runSort_readAllFiles(
                         "cannot read: {s}: {s}",
                         .{ file_path, common.posixErrorString(err) },
                     );
-                    return @intFromEnum(common.ExitCode.serious_error);
+                    return @backingInt(common.ExitCode.serious_error);
                 };
                 defer file.close(io);
                 try readLines(allocator, io, file, lines, delimiter, buffers);
@@ -841,7 +841,7 @@ fn runSort_writeOutput(
                 "open failed: {s}: {s}",
                 .{ out_path, common.posixErrorString(err) },
             );
-            return @intFromEnum(common.ExitCode.serious_error);
+            return @backingInt(common.ExitCode.serious_error);
         };
         defer out_file.close(io);
         var out_buffer: [8192]u8 = undefined;
@@ -1645,7 +1645,7 @@ fn checkSorted(
     stderr_writer: anytype,
 ) !u8 {
     _ = stdout_writer;
-    if (lines.len <= 1) return @intFromEnum(common.ExitCode.success);
+    if (lines.len <= 1) return @backingInt(common.ExitCode.success);
     std.debug.assert(lines.len > 1);
 
     const ctx = SortContext{
@@ -1671,12 +1671,12 @@ fn checkSorted(
                     .{ file_name, idx + 2, line },
                 );
             }
-            return @intFromEnum(common.ExitCode.general_error);
+            return @backingInt(common.ExitCode.general_error);
         }
         prev = line;
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Write sorted lines to output, handling unique filtering

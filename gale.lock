@@ -4,5 +4,5 @@
     sha256 = "d8abea7150172c3a8356f07f6ebbf711d40793e92a092ad15024bb5724d8634b"
     manifest_digest = "sha256:aafc263432f0c4a6f104f4f1baab59795c1b3944088e5737d688c921a183d976"
   [packages.zig]
-    version = "0.16.0-1"
+    version = "0.17.0-1"
     sha256 = "e6407395e6765d81612de3314ebccf1d8d1e75e8bab34eae6ee0bc571c294a26"

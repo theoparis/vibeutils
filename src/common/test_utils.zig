@@ -288,8 +288,8 @@ pub fn runCommand(
     const result = try std.process.run(gpa, io, .{ .argv = argv });
     const exit_code: u8 = switch (result.term) {
         .exited => |code| code,
-        .signal => |signal| @as(u8, @intCast(@intFromEnum(signal) + 128)),
-        .stopped => |signal| @as(u8, @intCast(@intFromEnum(signal) + 128)),
+        .signal => |signal| @as(u8, @intCast(@backingInt(signal) + 128)),
+        .stopped => |signal| @as(u8, @intCast(@backingInt(signal) + 128)),
         .unknown => |code| @as(u8, @intCast(code)),
     };
     return .{

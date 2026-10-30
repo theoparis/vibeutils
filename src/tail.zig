@@ -259,7 +259,7 @@ pub fn runTail(
         expanded_args,
         "tail",
         stderr_writer,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     defer allocator.free(parsed_args.positionals);
     assert(parsed_args.positionals.len <= expanded_args.len);
 
@@ -286,7 +286,7 @@ pub fn runTail(
 
     if (parsed_args.positionals.len == 0) {
         try processStdin(allocator, io, stdout_writer, options);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     return runTail_runWithPositionals(
@@ -339,7 +339,7 @@ fn runTail_runWithPositionals(
         options,
         if (options.follow) dump_failed else null,
     );
-    if (had_error and !options.follow) return @intFromEnum(common.ExitCode.general_error);
+    if (had_error and !options.follow) return @backingInt(common.ExitCode.general_error);
 
     if (options.follow) {
         if (try runTail_enterFollow(
@@ -355,7 +355,7 @@ fn runTail_runWithPositionals(
         }
     }
 
-    return @intFromEnum(common.ExitCode.success);
+    return @backingInt(common.ExitCode.success);
 }
 
 /// Process every positional argument (file paths or "-"), returning true if
@@ -408,18 +408,18 @@ fn runTail_handleHelpVersion(
     stdout_writer: *std.Io.Writer,
 ) !?u8 {
     // Sanity-check the exit-code constants this helper returns.
-    assert(@intFromEnum(common.ExitCode.success) == 0);
+    assert(@backingInt(common.ExitCode.success) == 0);
 
     // Handle help
     if (parsed_args.help) {
         try printHelp(allocator, stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     // Handle version
     if (parsed_args.version) {
         try printVersion(stdout_writer);
-        return @intFromEnum(common.ExitCode.success);
+        return @backingInt(common.ExitCode.success);
     }
 
     return null;
@@ -463,7 +463,7 @@ fn runTail_buildBlockOption(
         stderr_writer,
         "blocks",
         blocks_str,
-    ) catch return @intFromEnum(common.ExitCode.general_error);
+    ) catch return @backingInt(common.ExitCode.general_error);
     if (options_out.from_beginning_bytes) {
         // +N blocks means start at block N (1-indexed), skip (N-1)*512 bytes
         // processInputByBytesFromBeginning uses skip = byte_count - 1
@@ -497,7 +497,7 @@ fn runTail_buildOptions(
             stderr_writer,
             "lines",
             lines_str,
-        ) catch return @intFromEnum(common.ExitCode.general_error);
+        ) catch return @backingInt(common.ExitCode.general_error);
     } else if (parsed_args.reverse) {
         options_out.line_count = null; // -r without -n: show all lines
     } else {
@@ -514,7 +514,7 @@ fn runTail_buildOptions(
             stderr_writer,
             "bytes",
             bytes_str,
-        ) catch return @intFromEnum(common.ExitCode.general_error);
+        ) catch return @backingInt(common.ExitCode.general_error);
         options_out.line_count = null; // byte mode overrides line mode
     }
 
@@ -538,7 +538,7 @@ fn runTail_buildOptions(
             "option used in invalid context -- r",
             .{},
         );
-        return @intFromEnum(common.ExitCode.general_error);
+        return @backingInt(common.ExitCode.general_error);
     }
 
     // Byte/block mode and line mode are mutually exclusive at exit: every
@@ -637,7 +637,7 @@ fn runTail_rejectFollowCap(
         "cannot follow more than {d} files",
         .{follow_files_max},
     );
-    return @intFromEnum(common.ExitCode.general_error);
+    return @backingInt(common.ExitCode.general_error);
 }
 
 /// One follow-set member. `slot` is the positional index, including `-` and
@@ -703,7 +703,7 @@ fn runTail_enterFollow(
         &slots_buf,
     );
     defer followSet_closeSlots(allocator, io, slots_buf[0..slot_count]);
-    if (slot_count == 0) return @intFromEnum(common.ExitCode.general_error);
+    if (slot_count == 0) return @backingInt(common.ExitCode.general_error);
 
     const last_idx: u32 = @intCast(parsed_args.positionals.len - 1);
     var last_output_slot: ?u32 = last_idx;
@@ -910,7 +910,7 @@ fn followSlot_blank(
     slot: u32,
 ) !FollowedFile {
     assert(slot != std.math.maxInt(u32));
-    const path_z = try std.mem.Allocator.dupeZ(allocator, u8, path);
+    const path_z = try std.mem.Allocator.dupeSentinel(allocator, u8, path, 0);
     assert(path_z.len == path.len);
     return .{
         .path = path,
@@ -3004,7 +3004,7 @@ test "tail: -f and -r are mutually exclusive" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), result);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), result);
     try testing.expect(
         std.mem.find(u8, stderr_aw.writer.buffered(), "option used in invalid context") != null,
     );
@@ -3022,7 +3022,7 @@ test "tail: -f with nonexistent file returns error" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@as(u8, @intFromEnum(common.ExitCode.general_error)), result);
+    try testing.expectEqual(@as(u8, @backingInt(common.ExitCode.general_error)), result);
 }
 
 test "tail follow switch header uses GNU form" {

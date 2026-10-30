@@ -575,10 +575,10 @@ fn evaluateTestArgs(
                 "invalid expression",
                 .{},
             );
-            return @intFromEnum(ExitCode.@"error");
+            return @backingInt(ExitCode.@"error");
         },
     };
-    return if (result) @intFromEnum(ExitCode.true) else @intFromEnum(ExitCode.false);
+    return if (result) @backingInt(ExitCode.true) else @backingInt(ExitCode.false);
 }
 
 /// Run test command in bracket form (when invoked as '[')
@@ -597,7 +597,7 @@ pub fn runBracketTest(
     // Bracket form requires closing ']'
     if (args.len == 0 or !std.mem.eql(u8, args[args.len - 1], "]")) {
         common.printErrorWithProgram(allocator, stderr_writer, "[", "missing closing ']'", .{});
-        return @intFromEnum(ExitCode.@"error");
+        return @backingInt(ExitCode.@"error");
     }
     std.debug.assert(args.len > 0);
     std.debug.assert(std.mem.eql(u8, args[args.len - 1], "]"));
@@ -630,7 +630,7 @@ pub fn runTest(
                 "missing closing ']'",
                 .{},
             );
-            return @intFromEnum(ExitCode.@"error");
+            return @backingInt(ExitCode.@"error");
         }
         std.debug.assert(args.len >= 2);
         // Remove '[' and ']' from arguments
@@ -688,7 +688,7 @@ test "empty expression returns false" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "single non-empty string returns true" {
@@ -700,7 +700,7 @@ test "single non-empty string returns true" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "single empty string returns false" {
@@ -712,7 +712,7 @@ test "single empty string returns false" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "string length tests -z and -n" {
@@ -725,7 +725,7 @@ test "string length tests -z and -n" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -734,7 +734,7 @@ test "string length tests -z and -n" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // -n (non-zero length)
     result = try runTest(
@@ -744,7 +744,7 @@ test "string length tests -z and -n" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -753,7 +753,7 @@ test "string length tests -z and -n" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "string equality tests" {
@@ -766,7 +766,7 @@ test "string equality tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -775,7 +775,7 @@ test "string equality tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // String inequality
     result = try runTest(
@@ -785,7 +785,7 @@ test "string equality tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -794,7 +794,7 @@ test "string equality tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "numeric comparison tests" {
@@ -807,7 +807,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -816,7 +816,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Not equal
     result = try runTest(
@@ -826,7 +826,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -835,7 +835,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Less than
     result = try runTest(
@@ -845,7 +845,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -854,7 +854,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Less than or equal
     result = try runTest(
@@ -864,7 +864,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -873,7 +873,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -882,7 +882,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Greater than
     result = try runTest(
@@ -892,7 +892,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -901,7 +901,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Greater than or equal
     result = try runTest(
@@ -911,7 +911,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -920,7 +920,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -929,7 +929,7 @@ test "numeric comparison tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "file existence tests" {
@@ -953,7 +953,7 @@ test "file existence tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Test regular file
     result = try runTest(
@@ -963,7 +963,7 @@ test "file existence tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Test non-existent file
     result = try runTest(
@@ -973,7 +973,7 @@ test "file existence tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "directory tests" {
@@ -994,7 +994,7 @@ test "directory tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Test that file is not a directory
     const test_file = try tmp.dir().createFile(io, "test_file", .{});
@@ -1010,7 +1010,7 @@ test "directory tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "file size tests" {
@@ -1041,7 +1041,7 @@ test "file size tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Test non-empty file
     result = try runTest(
@@ -1051,7 +1051,7 @@ test "file size tests" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "bracket form requires closing bracket" {
@@ -1066,7 +1066,7 @@ test "bracket form requires closing bracket" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
     const found = std.mem.find(u8, stderr_aw.writer.buffered(), "missing closing ']'");
     try testing.expect(found != null);
 }
@@ -1080,7 +1080,7 @@ test "bracket form works correctly" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -1089,7 +1089,7 @@ test "bracket form works correctly" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     result = try runTest(
         testing.allocator,
@@ -1098,7 +1098,7 @@ test "bracket form works correctly" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "terminal test with invalid fd" {
@@ -1111,7 +1111,7 @@ test "terminal test with invalid fd" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "terminal test with valid fd" {
@@ -1126,8 +1126,8 @@ test "terminal test with valid fd" {
         common.null_writer,
     );
     // Result can be either true or false depending on environment, just check it's not error
-    const is_valid = result == @intFromEnum(ExitCode.true) or
-        result == @intFromEnum(ExitCode.false);
+    const is_valid = result == @backingInt(ExitCode.true) or
+        result == @backingInt(ExitCode.false);
     try testing.expect(is_valid);
 }
 
@@ -1144,7 +1144,7 @@ test "numeric comparison with invalid numbers" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 }
 
 test "invalid expressions return error" {
@@ -1160,7 +1160,7 @@ test "invalid expressions return error" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 
     // Test with incomplete binary expression (missing second operand)
     stderr_aw.clearRetainingCapacity();
@@ -1171,7 +1171,7 @@ test "invalid expressions return error" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 }
 
 test "negation operator" {
@@ -1184,7 +1184,7 @@ test "negation operator" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     result = try runTest(
         testing.allocator,
@@ -1193,7 +1193,7 @@ test "negation operator" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Negation with file tests
     result = try runTest(
@@ -1203,7 +1203,7 @@ test "negation operator" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "logical AND operator -a" {
@@ -1216,7 +1216,7 @@ test "logical AND operator -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // First false
     result = try runTest(
@@ -1226,7 +1226,7 @@ test "logical AND operator -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Second false
     result = try runTest(
@@ -1236,7 +1236,7 @@ test "logical AND operator -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Both false
     result = try runTest(
@@ -1246,7 +1246,7 @@ test "logical AND operator -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "logical OR operator -o" {
@@ -1259,7 +1259,7 @@ test "logical OR operator -o" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // First true, second false
     result = try runTest(
@@ -1269,7 +1269,7 @@ test "logical OR operator -o" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // First false, second true
     result = try runTest(
@@ -1279,7 +1279,7 @@ test "logical OR operator -o" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Both false
     result = try runTest(
@@ -1289,7 +1289,7 @@ test "logical OR operator -o" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "parentheses grouping" {
@@ -1302,7 +1302,7 @@ test "parentheses grouping" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     result = try runTest(
         testing.allocator,
@@ -1311,7 +1311,7 @@ test "parentheses grouping" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Parentheses with operators
     result = try runTest(
@@ -1321,7 +1321,7 @@ test "parentheses grouping" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "operator precedence -o vs -a" {
@@ -1335,7 +1335,7 @@ test "operator precedence -o vs -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // This should be: true -o (false -a false) = true -o false = true
     result = try runTest(
@@ -1345,7 +1345,7 @@ test "operator precedence -o vs -a" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "complex nested expressions" {
@@ -1358,7 +1358,7 @@ test "complex nested expressions" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Test simple negation of string inequality (should be false)
     result = try runTest(
@@ -1368,7 +1368,7 @@ test "complex nested expressions" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "error handling for malformed expressions" {
@@ -1384,7 +1384,7 @@ test "error handling for malformed expressions" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 
     // Test with unbalanced parentheses
     stderr_aw.clearRetainingCapacity();
@@ -1395,7 +1395,7 @@ test "error handling for malformed expressions" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 }
 
 // Test individual evaluation functions
@@ -1469,7 +1469,7 @@ test "invalid operator should return exit code 2" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result);
 
     // Test with invalid binary operator - should return error exit code 2
     stderr_aw.clearRetainingCapacity();
@@ -1480,7 +1480,7 @@ test "invalid operator should return exit code 2" {
         common.null_writer,
         &stderr_aw.writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), result2);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), result2);
 
     // Debug: Test that valid operators still work
     const result3 = try runTest(
@@ -1490,7 +1490,7 @@ test "invalid operator should return exit code 2" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result3);
+    try testing.expectEqual(@backingInt(ExitCode.false), result3);
 }
 
 test "parentheses expression with logical operators should return correct exit code" {
@@ -1504,7 +1504,7 @@ test "parentheses expression with logical operators should return correct exit c
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Test: test ( "hello" -a "world" ) -o "" should return exit code 0 (true)
     const result2 = try runTest(
@@ -1514,7 +1514,7 @@ test "parentheses expression with logical operators should return correct exit c
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result2);
+    try testing.expectEqual(@backingInt(ExitCode.true), result2);
 }
 
 test "complex nested expressions should parse correctly" {
@@ -1527,7 +1527,7 @@ test "complex nested expressions should parse correctly" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Test: test ! ( "hello" -o "" ) -a "world" should parse correctly
     const result2 = try runTest(
@@ -1537,7 +1537,7 @@ test "complex nested expressions should parse correctly" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result2);
+    try testing.expectEqual(@backingInt(ExitCode.false), result2);
 }
 
 test "bracket form should handle errors identically to test command" {
@@ -1564,8 +1564,8 @@ test "bracket form should handle errors identically to test command" {
     );
 
     // Both should return error exit code 2
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), bracket_result);
-    try testing.expectEqual(@intFromEnum(ExitCode.@"error"), test_result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), bracket_result);
+    try testing.expectEqual(@backingInt(ExitCode.@"error"), test_result);
     try testing.expectEqual(bracket_result, test_result);
 }
 
@@ -1579,7 +1579,7 @@ test "POSIX: string 'false' is non-empty, should be true" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "POSIX: string 'true' is non-empty, should be true" {
@@ -1592,7 +1592,7 @@ test "POSIX: string 'true' is non-empty, should be true" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "POSIX: -o is left-associative" {
@@ -1605,7 +1605,7 @@ test "POSIX: -o is left-associative" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // "a" -a "b" -a "c" should be true (all non-empty)
     result = try runTest(
@@ -1615,7 +1615,7 @@ test "POSIX: -o is left-associative" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // "" -a "b" -a "c" should be false (left-assoc: ("" -a "b") -a "c" = false -a "c" = false)
     result = try runTest(
@@ -1625,7 +1625,7 @@ test "POSIX: -o is left-associative" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "symlink detection with -L and -h operators" {
@@ -1664,7 +1664,7 @@ test "symlink detection with -L and -h operators" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Test -h operator on symlink (should return true)
     result = try runTest(
@@ -1674,7 +1674,7 @@ test "symlink detection with -L and -h operators" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Test -L operator on regular file (should return false)
     result = try runTest(
@@ -1684,7 +1684,7 @@ test "symlink detection with -L and -h operators" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Test -h operator on regular file (should return false)
     result = try runTest(
@@ -1694,7 +1694,7 @@ test "symlink detection with -L and -h operators" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "setuid and sticky bit operators -u and -k" {
@@ -1708,7 +1708,7 @@ test "setuid and sticky bit operators -u and -k" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     result = try runTest(
         testing.allocator,
@@ -1717,7 +1717,7 @@ test "setuid and sticky bit operators -u and -k" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "file comparison operators -nt, -ot, -ef" {
@@ -1751,7 +1751,7 @@ test "file comparison operators -nt, -ot, -ef" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // -ot: older file is older than newer file
     result = try runTest(
@@ -1761,7 +1761,7 @@ test "file comparison operators -nt, -ot, -ef" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // -ef: same file should be equal to itself
     result = try runTest(
@@ -1771,7 +1771,7 @@ test "file comparison operators -nt, -ot, -ef" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // -ef: different files should not be equal
     result = try runTest(
@@ -1781,7 +1781,7 @@ test "file comparison operators -nt, -ot, -ef" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Non-existent files should return false
     result = try runTest(
@@ -1791,7 +1791,7 @@ test "file comparison operators -nt, -ot, -ef" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 // Regression: the comparison in isNewerThan/isOlderThan reads
@@ -1829,7 +1829,7 @@ test "file comparison -nt / -ot across a one-second boundary" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // -ot: the first-created file is older than the second.
     result = try runTest(
@@ -1839,7 +1839,7 @@ test "file comparison -nt / -ot across a one-second boundary" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Reverse direction must return false in both cases.
     result = try runTest(
@@ -1849,7 +1849,7 @@ test "file comparison -nt / -ot across a one-second boundary" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
     result = try runTest(
         testing.allocator,
         io,
@@ -1857,7 +1857,7 @@ test "file comparison -nt / -ot across a one-second boundary" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "string ordering operator < (less than)" {
@@ -1870,7 +1870,7 @@ test "string ordering operator < (less than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // "def" < "abc" should be false
     result = try runTest(
@@ -1880,7 +1880,7 @@ test "string ordering operator < (less than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Same strings should be false
     result = try runTest(
@@ -1890,7 +1890,7 @@ test "string ordering operator < (less than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Empty string sorts before non-empty
     result = try runTest(
@@ -1900,7 +1900,7 @@ test "string ordering operator < (less than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "string ordering operator > (greater than)" {
@@ -1913,7 +1913,7 @@ test "string ordering operator > (greater than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // "abc" > "def" should be false
     result = try runTest(
@@ -1923,7 +1923,7 @@ test "string ordering operator > (greater than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Same strings should be false
     result = try runTest(
@@ -1933,7 +1933,7 @@ test "string ordering operator > (greater than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 
     // Non-empty string sorts after empty
     result = try runTest(
@@ -1943,7 +1943,7 @@ test "string ordering operator > (greater than)" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 }
 
 test "string ordering operators are recognized as binary operators" {
@@ -1976,7 +1976,7 @@ test "-G operator: file group matches effective group ID" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Non-existent file should return false
     result = try runTest(
@@ -1986,7 +1986,7 @@ test "-G operator: file group matches effective group ID" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "-O operator: file user matches effective user ID" {
@@ -2009,7 +2009,7 @@ test "-O operator: file user matches effective user ID" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.true), result);
+    try testing.expectEqual(@backingInt(ExitCode.true), result);
 
     // Non-existent file should return false
     result = try runTest(
@@ -2019,7 +2019,7 @@ test "-O operator: file user matches effective user ID" {
         common.null_writer,
         common.null_writer,
     );
-    try testing.expectEqual(@intFromEnum(ExitCode.false), result);
+    try testing.expectEqual(@backingInt(ExitCode.false), result);
 }
 
 test "-G and -O are recognized as unary operators" {
