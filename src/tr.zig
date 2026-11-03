@@ -59,7 +59,7 @@ const SetError = error{
 /// Supports: literal chars, ranges (a-z), POSIX classes ([:alpha:]),
 /// equivalence classes ([=c=]), repetitions ([c*n]), and escape sequences.
 fn parseSet(allocator: Allocator, set_str: []const u8) SetError![]u8 {
-    var result: std.ArrayListUnmanaged(u8) = .empty;
+    var result: std.ArrayList(u8) = .empty;
     errdefer result.deinit(allocator);
 
     var i: usize = 0;
@@ -199,7 +199,7 @@ fn parseCharClass(allocator: Allocator, str: []const u8, i: *usize) SetError![]u
 
 /// Expand a named character class to all matching byte values.
 fn expandClass(allocator: Allocator, class_name: []const u8) SetError![]u8 {
-    var result: std.ArrayListUnmanaged(u8) = .empty;
+    var result: std.ArrayList(u8) = .empty;
     errdefer result.deinit(allocator);
 
     if (std.mem.eql(u8, class_name, "upper")) {
@@ -336,7 +336,7 @@ fn complementSet(allocator: Allocator, set: []const u8) ![]u8 {
         in_set[b] = true;
     }
 
-    var result: std.ArrayListUnmanaged(u8) = .empty;
+    var result: std.ArrayList(u8) = .empty;
     errdefer result.deinit(allocator);
 
     var c: u16 = 0;

@@ -342,7 +342,7 @@ fn parseArgs(
     std.debug.assert(opts.positionals.len == 0);
     opts.display = common.display_config.DisplayConfig.resolve(allocator);
     var err_msg: ?[]const u8 = null;
-    var positionals: std.ArrayListUnmanaged([]const u8) = .empty;
+    var positionals: std.ArrayList([]const u8) = .empty;
     var i: usize = 0;
 
     while (i < args.len) : (i += 1) {
@@ -715,7 +715,7 @@ fn getMountedFilesystemsDarwin(allocator: Allocator) ![]FsInfo {
     // The buffer holds ucount entries; the second getfsstat cannot report more
     // than fit, so slicing buf[0..actual_count] stays within the allocation.
     std.debug.assert(actual_count <= ucount);
-    var result: std.ArrayListUnmanaged(FsInfo) = .empty;
+    var result: std.ArrayList(FsInfo) = .empty;
 
     for (buf[0..actual_count]) |*fs| {
         // Dupe strings so they outlive the getfsstat buffer
@@ -888,7 +888,7 @@ fn getMountedFilesystemsGetfsstat(
     // The kernel cannot report more entries than the buffer we passed.
     std.debug.assert(actual_count <= ucount);
     std.debug.assert(ucount > 0);
-    var result: std.ArrayListUnmanaged(FsInfo) = .empty;
+    var result: std.ArrayList(FsInfo) = .empty;
 
     for (buf[0..actual_count]) |*fs| {
         try result.append(allocator, try fsInfoFromBsdStat(allocator, fs));
@@ -954,7 +954,7 @@ fn getMountedFilesystemsLinux(io: std.Io, allocator: Allocator) ![]FsInfo {
         return error.SystemResources;
     };
 
-    var result: std.ArrayListUnmanaged(FsInfo) = .empty;
+    var result: std.ArrayList(FsInfo) = .empty;
 
     // /proc/mounts format: device mountpoint fstype options dump pass
     var line_iter = std.mem.splitScalar(u8, content, '\n');
@@ -1292,7 +1292,7 @@ fn groupDarwinVolumes(allocator: Allocator, filesystems: []const FsInfo) ![]FsIn
         groups.deinit(allocator);
     }
 
-    var result: std.ArrayListUnmanaged(FsInfo) = .empty;
+    var result: std.ArrayList(FsInfo) = .empty;
     errdefer result.deinit(allocator);
 
     for (filesystems) |fs| {
@@ -2651,7 +2651,7 @@ pub fn runDf(
     // Collect visible filesystems into a list for two-pass rendering.
     // owns_fs_strings tracks whether visible owns the FsInfo string
     // allocations (positional path) or they're owned by all_fs_storage.
-    var visible: std.ArrayListUnmanaged(FsInfo) = .empty;
+    var visible: std.ArrayList(FsInfo) = .empty;
     defer visible.deinit(allocator);
     var owns_fs_strings = false;
 
@@ -2809,7 +2809,7 @@ fn runDf_resolveColorMode(allocator: Allocator, opts: DfOptions, stdout: *std.Io
 // FsInfo strings are freed only on the positional path (owns_fs_strings).
 fn runDf_cleanup(
     allocator: Allocator,
-    visible: *std.ArrayListUnmanaged(FsInfo),
+    visible: *std.ArrayList(FsInfo),
     owns_fs_strings: bool,
     all_fs_storage: ?[]FsInfo,
     display_fs_storage: ?[]FsInfo,
@@ -2835,7 +2835,7 @@ fn runDf_cleanup(
 // Mutable state threaded through collection so the dispatcher signature
 // stays small. The parent owns every referent and its defer cleanup.
 const CollectContext = struct {
-    visible: *std.ArrayListUnmanaged(FsInfo),
+    visible: *std.ArrayList(FsInfo),
     owns_fs_strings: *bool,
     all_fs_storage: *?[]FsInfo,
     display_fs_storage: *?[]FsInfo,
@@ -2876,7 +2876,7 @@ fn runDf_collectFromPositionals(
     io: std.Io,
     opts: DfOptions,
     stderr: *std.Io.Writer,
-    visible: *std.ArrayListUnmanaged(FsInfo),
+    visible: *std.ArrayList(FsInfo),
     exit_code: *u8,
 ) void {
     std.debug.assert(opts.positionals.len > 0);
@@ -2911,7 +2911,7 @@ fn runDf_collectFromMounts(
     io: std.Io,
     opts: DfOptions,
     stderr: *std.Io.Writer,
-    visible: *std.ArrayListUnmanaged(FsInfo),
+    visible: *std.ArrayList(FsInfo),
     all_fs_storage: *?[]FsInfo,
     display_fs_storage: *?[]FsInfo,
 ) bool {

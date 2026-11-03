@@ -201,9 +201,9 @@ fn runEnv_handleSplitString(
     std.debug.assert(options.split_string != null);
     std.debug.assert(!options.help);
 
-    var split_assignments = std.ArrayListUnmanaged(Assignment).empty;
+    var split_assignments = std.ArrayList(Assignment).empty;
     defer split_assignments.deinit(allocator);
-    var split_command = std.ArrayListUnmanaged([]const u8).empty;
+    var split_command = std.ArrayList([]const u8).empty;
     var in_command = false;
 
     var token_it = std.mem.tokenizeAny(u8, split_str, " \t");
@@ -262,7 +262,7 @@ fn runEnv_handleSplitString_mergeAssignments(
     std.debug.assert(split_assignments.len > 0);
     std.debug.assert(options.split_string != null);
 
-    var merged = std.ArrayListUnmanaged(Assignment).empty;
+    var merged = std.ArrayList(Assignment).empty;
     // Add original assignments first
     for (options.assignments) |a| {
         merged.append(allocator, a) catch {
@@ -375,9 +375,9 @@ fn parseArgs(
     args: []const []const u8,
 ) error{ UnknownFlag, MissingValue, OutOfMemory }!EnvOptions {
     var options = EnvOptions{};
-    var unsets = std.ArrayListUnmanaged([]const u8).empty;
+    var unsets = std.ArrayList([]const u8).empty;
     errdefer unsets.deinit(allocator);
-    var assignments = std.ArrayListUnmanaged(Assignment).empty;
+    var assignments = std.ArrayList(Assignment).empty;
     errdefer assignments.deinit(allocator);
     var i: usize = 0;
     var past_options = false;
@@ -489,7 +489,7 @@ fn parseArgs_classifyToken(
 /// Append a NAME=VALUE assignment parsed from arg, split at eq_pos.
 fn parseArgs_appendAssignment(
     allocator: Allocator,
-    assignments: *std.ArrayListUnmanaged(Assignment),
+    assignments: *std.ArrayList(Assignment),
     arg: []const u8,
     eq_pos: usize, // tiger:allow:usize-arch std slice indexing forces usize
 ) error{OutOfMemory}!void {
@@ -507,8 +507,8 @@ fn parseArgs_appendAssignment(
 fn parseArgs_finalizeOwnership(
     allocator: Allocator,
     options: *EnvOptions,
-    unsets: *std.ArrayListUnmanaged([]const u8),
-    assignments: *std.ArrayListUnmanaged(Assignment),
+    unsets: *std.ArrayList([]const u8),
+    assignments: *std.ArrayList(Assignment),
 ) error{OutOfMemory}!void {
     std.debug.assert(!options.owns_memory);
     std.debug.assert(options.unsets.len == 0);
@@ -556,7 +556,7 @@ fn parseArgs_consumeValue(
 fn parseArgs_parseLongFlag(
     allocator: Allocator,
     options: *EnvOptions,
-    unsets: *std.ArrayListUnmanaged([]const u8),
+    unsets: *std.ArrayList([]const u8),
     arg: []const u8,
     i: *usize, // tiger:allow:usize-arch std slice indexing forces usize
     args: []const []const u8,
@@ -601,7 +601,7 @@ fn parseArgs_parseLongFlag(
 fn parseArgs_parseShortFlags(
     allocator: Allocator,
     options: *EnvOptions,
-    unsets: *std.ArrayListUnmanaged([]const u8),
+    unsets: *std.ArrayList([]const u8),
     arg: []const u8,
     i: *usize, // tiger:allow:usize-arch std slice indexing forces usize
     args: []const []const u8,

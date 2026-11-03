@@ -6,7 +6,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayListUnmanaged;
+const ArrayList = std.ArrayList;
 const common = @import("common");
 const TestDir = common.test_dir.TestDir;
 

@@ -468,7 +468,7 @@ fn processInput_outputAllButLast(
     const delimiter_is_newline_or_nul = delimiter == '\n' or delimiter == 0;
     std.debug.assert(delimiter_is_newline_or_nul); // Newline or NUL only.
 
-    var all_lines: std.ArrayListUnmanaged([]const u8) = .empty;
+    var all_lines: std.ArrayList([]const u8) = .empty;
     defer {
         for (all_lines.items) |line| alloc.free(line);
         all_lines.deinit(alloc);

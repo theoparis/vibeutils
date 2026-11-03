@@ -498,7 +498,7 @@ test "LS_COLORS zero and empty SGR values are not colored" {
 }
 
 test "LS_COLORS rejects entries beyond the hard cap" {
-    var text: std.ArrayListUnmanaged(u8) = .empty;
+    var text: std.ArrayList(u8) = .empty;
     defer text.deinit(testing.allocator);
 
     var pair_count: u32 = 0;

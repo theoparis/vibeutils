@@ -73,16 +73,16 @@ const GrepOptions = struct {
     after_context: usize = 0,
     before_context: usize = 0,
     color: common.display_config.ResolvedMode = .off,
-    include_globs: std.ArrayListUnmanaged([]const u8) = .empty,
-    exclude_globs: std.ArrayListUnmanaged([]const u8) = .empty,
-    exclude_dirs: std.ArrayListUnmanaged([]const u8) = .empty,
-    patterns: std.ArrayListUnmanaged([]const u8) = .empty,
-    pattern_file_contents: std.ArrayListUnmanaged([]const u8) = .empty,
+    include_globs: std.ArrayList([]const u8) = .empty,
+    exclude_globs: std.ArrayList([]const u8) = .empty,
+    exclude_dirs: std.ArrayList([]const u8) = .empty,
+    patterns: std.ArrayList([]const u8) = .empty,
+    pattern_file_contents: std.ArrayList([]const u8) = .empty,
     /// True once `-e`/`--regexp` or `-f`/`--file` named a pattern source.
     /// GNU consults this after the whole scan to decide whether the first
     /// operand is PATTERNS; an empty `-f` file still counts as a source.
     pattern_source_given: bool = false,
-    files: std.ArrayListUnmanaged([]const u8) = .empty,
+    files: std.ArrayList([]const u8) = .empty,
     help: bool = false,
     version: bool = false,
 
@@ -806,8 +806,8 @@ const PatternFileResult = enum { loaded, unreadable };
 fn loadPatternsFromFile(
     allocator: Allocator,
     io: std.Io,
-    patterns: *std.ArrayListUnmanaged([]const u8),
-    pattern_file_contents: *std.ArrayListUnmanaged([]const u8),
+    patterns: *std.ArrayList([]const u8),
+    pattern_file_contents: *std.ArrayList([]const u8),
     path: []const u8,
     stderr_writer: *std.Io.Writer,
 ) !PatternFileResult {
@@ -926,7 +926,7 @@ fn copyBracketExpression(pattern: []const u8, start: usize) usize {
 /// everywhere and `\<`/`\>` on Darwin; see `gnuEscapeReplacement`.
 fn translateSimpleGnuEscapes(allocator: Allocator, pattern: []const u8) ?[]u8 {
     assert(pattern.len < std.math.maxInt(u32));
-    var out = std.ArrayListUnmanaged(u8).empty;
+    var out = std.ArrayList(u8).empty;
     const bound: usize = pattern.len * 7 + 1;
     var i: usize = 0;
     while (i < pattern.len) {
@@ -1009,7 +1009,7 @@ fn transpileBreEscape(
     allocator: Allocator,
     pattern: []const u8,
     i: usize,
-    out: *std.ArrayListUnmanaged(u8),
+    out: *std.ArrayList(u8),
     at_expr_start: *bool,
 ) ?usize {
     assert(i < pattern.len);
@@ -1052,7 +1052,7 @@ fn transpileBreBare(
     allocator: Allocator,
     ch: u8,
     dollar_is_anchor: bool,
-    out: *std.ArrayListUnmanaged(u8),
+    out: *std.ArrayList(u8),
     at_expr_start: *bool,
 ) bool {
     assert(ch != '\\');
@@ -1085,7 +1085,7 @@ fn transpileBreBare(
 /// alternation, which POSIX BRE cannot express portably.
 fn transpileBreToEre(allocator: Allocator, pattern: []const u8) ?[]u8 {
     assert(pattern.len < std.math.maxInt(u32));
-    var out = std.ArrayListUnmanaged(u8).empty;
+    var out = std.ArrayList(u8).empty;
     const bound: usize = pattern.len * 2 + 1;
     var at_expr_start = true;
     var i: usize = 0;
@@ -1548,9 +1548,9 @@ fn processFile(
     const line_term: u8 = if (opts.null_line_sep) 0 else '\n';
 
     // Split into lines, tracking byte offsets
-    var lines = std.ArrayListUnmanaged([]const u8).empty;
+    var lines = std.ArrayList([]const u8).empty;
     defer lines.deinit(allocator);
-    var line_offsets = std.ArrayListUnmanaged(usize).empty;
+    var line_offsets = std.ArrayList(usize).empty;
     defer line_offsets.deinit(allocator);
     if (!processFile_splitLines(allocator, content, line_delim, &lines, &line_offsets)) {
         return false;
@@ -1805,8 +1805,8 @@ fn processFile_splitLines(
     allocator: Allocator,
     content: []const u8,
     line_delim: u8,
-    lines_ptr: *std.ArrayListUnmanaged([]const u8),
-    line_offsets_ptr: *std.ArrayListUnmanaged(usize), // tiger:allow:usize-arch byte offsets list
+    lines_ptr: *std.ArrayList([]const u8),
+    line_offsets_ptr: *std.ArrayList(usize), // tiger:allow:usize-arch byte offsets list
 ) bool {
     const delim_ok = line_delim == 0 or line_delim == '\n';
     assert(delim_ok);
@@ -2483,7 +2483,7 @@ pub fn runGrep(
     }
 
     // Compile patterns
-    var compiled = std.ArrayListUnmanaged(CompiledPattern).empty;
+    var compiled = std.ArrayList(CompiledPattern).empty;
     defer {
         for (compiled.items) |*cp| freePattern(allocator, cp);
         compiled.deinit(allocator);
@@ -2646,7 +2646,7 @@ fn runGrep_dispatchInputs(d: DispatchInputs) bool {
 fn runGrep_compilePatterns(
     allocator: Allocator,
     opts: *const GrepOptions,
-    compiled_ptr: *std.ArrayListUnmanaged(CompiledPattern),
+    compiled_ptr: *std.ArrayList(CompiledPattern),
     stderr_writer: *std.Io.Writer,
 ) ?void {
     assert(compiled_ptr.items.len == 0);
@@ -3198,7 +3198,7 @@ fn testRunGrep(file_content: []const u8, grep_args: []const []const u8) !u8 {
     const allocator = arena.allocator();
 
     // Build args list with the temp file path appended
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     defer args.deinit(allocator);
     try args.append(allocator, "--color=never");
     for (grep_args) |a| {
@@ -3307,7 +3307,7 @@ fn testRunGrepOutput(
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     for (grep_args) |a| {
         try args.append(allocator, a);
@@ -3432,7 +3432,7 @@ test "runGrep -lZ uses NUL byte after filename" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-lZ");
     try args.append(allocator, "hello");
@@ -3467,7 +3467,7 @@ test "runGrep -l without -Z uses newline after filename" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-l");
     try args.append(allocator, "hello");
@@ -3680,7 +3680,7 @@ test "runGrep -d skip silently skips directories" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-d");
     try args.append(allocator, "skip");
@@ -3730,7 +3730,7 @@ test "runGrep -z splits on NUL and terminates with NUL" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-z");
     try args.append(allocator, "hello");
@@ -3772,7 +3772,7 @@ test "runGrep -HZ uses NUL after filename in normal output" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-HZ");
     try args.append(allocator, "hello");
@@ -3805,7 +3805,7 @@ test "runGrep -cZ uses NUL after filename in count output" {
     const allocator = arena.allocator();
 
     // Use -H to force filename display with single file
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-cHZ");
     try args.append(allocator, "hello");
@@ -3849,8 +3849,8 @@ test "processFile reads file with many lines and matches selectively" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var buf = std.ArrayListUnmanaged(u8).empty;
-    var expected = std.ArrayListUnmanaged(u8).empty;
+    var buf = std.ArrayList(u8).empty;
+    var expected = std.ArrayList(u8).empty;
     for (0..200) |i| {
         if (i % 10 == 0) {
             const line = try std.fmt.allocPrint(allocator, "NEEDLE line {d}\n", .{i});
@@ -4429,7 +4429,7 @@ fn runGrepRecursive(
     errdefer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     // The helper always enables recursion; callers add -R / globs / -d as needed.
     // -r never clears dereference_recursive, so passing -R alongside is safe.
@@ -4626,7 +4626,7 @@ test "walker-migration: -R follows a symlink to a file and searches it" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-R");
     try args.append(allocator, "DEREFFILE");
@@ -4673,7 +4673,7 @@ test "walker-migration: -R descends a symlink to a directory and finds the burie
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-R");
     try args.append(allocator, "DEREFDIR");
@@ -4719,7 +4719,7 @@ test "walker-migration: directory operand is searched recursively under -r" {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-r");
     try args.append(allocator, "OPERANDMATCH");
@@ -4762,7 +4762,7 @@ test "walker-migration: -d skip silently skips a directory operand and keeps fil
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var args = std.ArrayListUnmanaged([]const u8).empty;
+    var args = std.ArrayList([]const u8).empty;
     try args.append(allocator, "--color=never");
     try args.append(allocator, "-d");
     try args.append(allocator, "skip");

@@ -334,7 +334,7 @@ fn createPathComponents(
     var iter = std.mem.splitScalar(u8, path, '/');
 
     // Build up the cumulative path
-    var cumulative: std.ArrayListUnmanaged(u8) = .empty;
+    var cumulative: std.ArrayList(u8) = .empty;
     defer cumulative.deinit(allocator);
 
     if (is_absolute) {
@@ -414,7 +414,7 @@ fn createPathComponents_countComponents(path: []const u8) u32 {
 /// Append `component` to the cumulative path, inserting a '/' separator first
 /// unless this is the first component or the path is exactly the root "/".
 fn createPathComponents_appendComponent(
-    cumulative: *std.ArrayListUnmanaged(u8),
+    cumulative: *std.ArrayList(u8),
     allocator: std.mem.Allocator,
     component: []const u8,
     first: bool,

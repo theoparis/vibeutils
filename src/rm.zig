@@ -2122,7 +2122,7 @@ test "rm: deep directory chain is fully removed without stack overflow" {
     const depth: usize = 400;
 
     // Build the chain "chain/d/d/d/..." and drop a file at each level.
-    var path_builder: std.ArrayListUnmanaged(u8) = .empty;
+    var path_builder: std.ArrayList(u8) = .empty;
     defer path_builder.deinit(testing.allocator);
     try path_builder.appendSlice(testing.allocator, "chain");
 

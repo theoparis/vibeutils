@@ -1086,7 +1086,7 @@ pub fn printColumnar(
     std.debug.assert(entries.len > 0);
 
     // Get terminal width
-    const term_width = options.terminal_width orelse common.terminal.getWidth(allocator) catch 80;
+    const term_width = options.terminal_width orelse (common.terminal.getWidth(allocator) catch 80);
 
     // Print in column-major order (fill down the columns, like BSD ls)
     const layout = printColumnar_layout(entries, options, term_width, .down);
@@ -1169,7 +1169,7 @@ pub fn printColumnarAcross(
     std.debug.assert(entries.len > 0);
 
     // Get terminal width
-    const term_width = options.terminal_width orelse common.terminal.getWidth(allocator) catch 80;
+    const term_width = options.terminal_width orelse (common.terminal.getWidth(allocator) catch 80);
 
     // BSD gives -x the identical grid to -C, tabs and all, and only fills it
     // across rows instead of down columns.

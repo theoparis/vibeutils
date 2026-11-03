@@ -193,7 +193,7 @@ fn runTacOnInput(
     _ = stderr_writer;
 
     // Read all input into memory
-    var content: std.ArrayListUnmanaged(u8) = .empty;
+    var content: std.ArrayList(u8) = .empty;
     defer content.deinit(allocator);
 
     var read_buf: [8192]u8 = undefined;
@@ -238,7 +238,7 @@ fn reverseByByteSeparator(
     before: bool,
     writer: *std.Io.Writer,
 ) !void {
-    var records: std.ArrayListUnmanaged([]const u8) = .empty;
+    var records: std.ArrayList([]const u8) = .empty;
     defer records.deinit(allocator);
 
     if (before) {
@@ -295,7 +295,7 @@ fn reverseByStringSeparator(
     // a multi-byte separator is required so the match loop makes progress.
     std.debug.assert(sep.len >= 2);
 
-    var records: std.ArrayListUnmanaged([]const u8) = .empty;
+    var records: std.ArrayList([]const u8) = .empty;
     defer records.deinit(allocator);
 
     if (before) {

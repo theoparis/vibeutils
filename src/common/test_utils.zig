@@ -212,7 +212,7 @@ pub const StdoutCapture = struct {
 /// Strip ANSI escape codes from text
 /// Handles multiple escape sequence types: CSI, OSC, and other ANSI sequences
 pub fn stripAnsiCodes(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
-    var result: std.ArrayListUnmanaged(u8) = .empty;
+    var result: std.ArrayList(u8) = .empty;
     errdefer result.deinit(allocator);
 
     var i: usize = 0;

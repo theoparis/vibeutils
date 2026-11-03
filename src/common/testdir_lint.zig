@@ -302,7 +302,7 @@ fn verifyTable(
     const inputs = try readListed(arena, io, dir, table);
     assert(inputs.len == listed_files_min);
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     const violations = try scanInputs(arena, inputs, &report);
     if (violations == 0) return;
 
@@ -324,7 +324,7 @@ fn readListed(
     assert(table.len == listed_files_min);
     assert(table.len <= files_max);
 
-    var out: std.ArrayListUnmanaged(ScanInput) = .empty;
+    var out: std.ArrayList(ScanInput) = .empty;
     var scanned: u32 = 0;
     for (table) |listed| {
         scanned += 1;
@@ -361,7 +361,7 @@ fn srcRelative(listed: []const u8) []const u8 {
 fn scanInputs(
     gpa: std.mem.Allocator,
     inputs: []const ScanInput,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(inputs.len > 0);
     assert(inputs.len <= files_max);
@@ -382,7 +382,7 @@ fn scanInputs(
 fn scanAlways(
     gpa: std.mem.Allocator,
     input: ScanInput,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(input.path.len > 0);
     assert(input.source.len <= bytes_max);
@@ -424,7 +424,7 @@ fn scanAlways(
 fn scanChdir(
     gpa: std.mem.Allocator,
     input: ScanInput,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(input.path.len > 0);
     assert(input.source.len <= bytes_max);
@@ -433,7 +433,7 @@ fn scanChdir(
     defer gpa.free(marked.in_code);
     defer marked.tests.deinit(gpa);
 
-    var bodies: std.ArrayListUnmanaged(Body) = .empty;
+    var bodies: std.ArrayList(Body) = .empty;
     defer bodies.deinit(gpa);
     try bodies.appendSlice(gpa, marked.tests.items);
     if (std.mem.eql(u8, input.path, "src/ls/main.zig")) {
@@ -450,7 +450,7 @@ fn scanChdir(
 
 const Marked = struct {
     in_code: []bool,
-    tests: std.ArrayListUnmanaged(Body),
+    tests: std.ArrayList(Body),
 };
 
 fn markSource(gpa: std.mem.Allocator, source: []const u8) !Marked {
@@ -459,7 +459,7 @@ fn markSource(gpa: std.mem.Allocator, source: []const u8) !Marked {
     errdefer gpa.free(in_code);
     markCode(source, in_code);
 
-    var tests: std.ArrayListUnmanaged(Body) = .empty;
+    var tests: std.ArrayList(Body) = .empty;
     errdefer tests.deinit(gpa);
     try collectNamedTests(gpa, source, in_code, &tests);
     assert(tests.items.len <= source.len);
@@ -472,7 +472,7 @@ fn recordCall(
     in_code: []const bool,
     name: []const u8,
     label: []const u8,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(name.len > 0);
     assert(label.len > 0);
@@ -487,7 +487,7 @@ fn recordText(
     input: ScanInput,
     in_code: []const bool,
     needle: []const u8,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(needle.len > 0);
     assert(input.path.len > 0);
@@ -502,7 +502,7 @@ fn recordCwdHits(
     input: ScanInput,
     in_code: []const bool,
     tests: []const Body,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(input.path.len > 0);
     assert(in_code.len == input.source.len);
@@ -528,7 +528,7 @@ fn recordUnlistedChdir(
     input: ScanInput,
     in_code: []const bool,
     bodies: []const Body,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(input.path.len > 0);
     assert(in_code.len == input.source.len);
@@ -559,7 +559,7 @@ fn recordMissingChdir(
     input: ScanInput,
     in_code: []const bool,
     bodies: []const Body,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(input.path.len > 0);
     assert(chdir_allowlist.len == allowlist_len);
@@ -722,7 +722,7 @@ fn collectNamedTests(
     arena: std.mem.Allocator,
     source: []const u8,
     in_code: []const bool,
-    out: *std.ArrayListUnmanaged(Body),
+    out: *std.ArrayList(Body),
 ) !void {
     assert(in_code.len == source.len);
     assert(out.items.len == 0);
@@ -912,7 +912,7 @@ fn scanOne(
     gpa: std.mem.Allocator,
     path: []const u8,
     source: []const u8,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(path.len > 0);
     assert(source.len <= bytes_max);
@@ -934,7 +934,7 @@ test "testing.tmpDir(.{}) is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/cat.zig", source, &report);
@@ -951,7 +951,7 @@ test "std.testing.tmpDir(.{ .iterate = true }) is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/wc.zig", source, &report);
@@ -970,7 +970,7 @@ test "multiline testing.tmpDir( is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/chmod.zig", source, &report);
@@ -984,7 +984,7 @@ test "comment testing.tmpDir nests under .zig-cache is not a hit" {
         \\const x = 1;
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/cat.zig", source, &report);
@@ -998,7 +998,7 @@ test "setCurrentDir( in a comment is not a hit" {
         \\const x = 1;
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/cat.zig", source, &report);
@@ -1013,7 +1013,7 @@ test "std.process.setCurrentDir(io, dir) is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/cat.zig", source, &report);
@@ -1028,7 +1028,7 @@ test "Dir.cwd().createDir( in a test body is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/mkdir.zig", source, &report);
@@ -1044,7 +1044,7 @@ test "Dir.cwd().createDir( in fn removeDirectories is not a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/rmdir.zig", source, &report);
@@ -1061,7 +1061,7 @@ test "Dir.cwd().openDir in a test body is not a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/chown.zig", source, &report);
@@ -1076,7 +1076,7 @@ test "Threaded.chdir( is a hit" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/pwd.zig", source, &report);
@@ -1091,7 +1091,7 @@ test "mv wrapper inner: common.test_dir.TestDir is a hit" {
         \\};
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/mv.zig", source, &report);
@@ -1212,7 +1212,7 @@ test "scan: a tmpDir hit only in the last listed path is RED" {
         .source = dirty,
     };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
     const n = try scanInputs(testing.allocator, &inputs, &report);
 
@@ -1234,7 +1234,7 @@ test "chdirToBase in an allowlisted body is clean" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/grep.zig", source, &report);
@@ -1254,7 +1254,7 @@ test "chdirToBase outside an allowlisted body is RED" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/grep.zig", source, &report);
@@ -1269,7 +1269,7 @@ test "allowlisted body missing chdirToBase is RED" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/grep.zig", source, &report);
@@ -1285,7 +1285,7 @@ test "chdirToBase in rmdir remove-with-parents body is clean" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/rmdir.zig", source, &report);
@@ -1301,7 +1301,7 @@ test "rmdir remove-with-parents missing chdirToBase is RED" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/rmdir.zig", source, &report);
@@ -1320,7 +1320,7 @@ test "AclFixture.init with chdirToBase is clean" {
         \\};
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/ls/main.zig", source, &report);
@@ -1335,7 +1335,7 @@ test "tmpDir hits skip the chdirToBase allowlist check" {
         \\}
         \\
     ;
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const n = try scanOne(testing.allocator, "src/grep.zig", source, &report);

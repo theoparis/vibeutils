@@ -1992,14 +1992,14 @@ fn processInputByLinesFromFile_reverseAll(
 ) !void {
     assert(isLineDelimiter(delimiter));
 
-    var lines: std.ArrayListUnmanaged([]u8) = .empty;
+    var lines: std.ArrayList([]u8) = .empty;
     defer {
         for (lines.items) |line| allocator.free(line);
         lines.deinit(allocator);
     }
 
     var read_buf: [8192]u8 = undefined;
-    var partial: std.ArrayListUnmanaged(u8) = .empty;
+    var partial: std.ArrayList(u8) = .empty;
     defer partial.deinit(allocator);
 
     // Relocated verbatim; bounded by EOF on the file.
@@ -2076,7 +2076,7 @@ fn processInputByLinesFromFile_lastN(
 
     // Stream file in chunks and extract lines
     var read_buf: [8192]u8 = undefined;
-    var partial: std.ArrayListUnmanaged(u8) = .empty;
+    var partial: std.ArrayList(u8) = .empty;
     defer partial.deinit(allocator);
 
     // Relocated verbatim; bounded by EOF on the file.
@@ -2204,7 +2204,7 @@ fn processInputByLines_reverseAll(
 ) !void {
     assert(isLineDelimiter(delimiter));
 
-    var lines: std.ArrayListUnmanaged([]u8) = .empty;
+    var lines: std.ArrayList([]u8) = .empty;
     defer {
         for (lines.items) |line| allocator.free(line);
         lines.deinit(allocator);

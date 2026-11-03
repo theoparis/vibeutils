@@ -91,7 +91,7 @@ pub fn main(init: std.process.Init) noreturn {
 fn runUniq_preprocessAllRepeated(
     allocator: Allocator,
     args: []const []const u8,
-    cleaned_args: *std.ArrayListUnmanaged([]const u8),
+    cleaned_args: *std.ArrayList([]const u8),
     method_out: *AllRepeatedMethod,
     stderr_writer: *std.Io.Writer,
 ) !?u8 {
@@ -283,7 +283,7 @@ pub fn runUniq(
     // Pre-process args: extract METHOD from --all-repeated=METHOD
     // and replace with bare --all-repeated so argparse sees a bool flag.
     var all_repeated_method: AllRepeatedMethod = .off;
-    var cleaned_args: std.ArrayListUnmanaged([]const u8) = .empty;
+    var cleaned_args: std.ArrayList([]const u8) = .empty;
     defer cleaned_args.deinit(allocator);
 
     if (try runUniq_preprocessAllRepeated(
@@ -470,7 +470,7 @@ fn runUniqWithInput(
 /// Read one line delimited by `delimiter`. Returns null on EOF.
 /// Caller owns the returned slice.
 fn readLine(allocator: Allocator, reader: *std.Io.Reader, delimiter: u8) !?[]u8 {
-    var line: std.ArrayListUnmanaged(u8) = .empty;
+    var line: std.ArrayList(u8) = .empty;
     errdefer line.deinit(allocator);
 
     // One pass per byte of the line; line length is unbounded a priori, so a

@@ -166,7 +166,7 @@ fn resolveLogicalWithMode(
     std.debug.assert(abs_path[0] == '/');
 
     // Split into components and resolve . and ..
-    var components: std.ArrayListUnmanaged([]const u8) = .empty;
+    var components: std.ArrayList([]const u8) = .empty;
     defer components.deinit(allocator);
 
     var it = std.mem.tokenizeScalar(u8, abs_path, '/');
@@ -403,7 +403,7 @@ pub fn runRealpath(
     stderr_writer: *std.Io.Writer,
 ) !u8 {
     // Pre-process args to handle --strip alias for --no-symlinks
-    var processed_args: std.ArrayListUnmanaged([]const u8) = .empty;
+    var processed_args: std.ArrayList([]const u8) = .empty;
     defer processed_args.deinit(allocator);
 
     for (args) |arg| {

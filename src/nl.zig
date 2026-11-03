@@ -855,9 +855,9 @@ pub fn runNl(
     }
 
     // Resolve options
-    const opts = resolveOptions(parsed_args, stderr_writer, allocator) catch {
+    const opts = (resolveOptions(parsed_args, stderr_writer, allocator) catch {
         return @backingInt(common.ExitCode.general_error);
-    } orelse {
+    }) orelse {
         return @backingInt(common.ExitCode.general_error);
     };
     // Free compiled regex patterns to prevent leaks

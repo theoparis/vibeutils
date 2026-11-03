@@ -31,7 +31,7 @@ pub const Error = error{
 pub fn collectMissingNeedles(
     gpa: std.mem.Allocator,
     source: []const u8,
-    missing: *std.ArrayListUnmanaged(u8),
+    missing: *std.ArrayList(u8),
 ) !void {
     assert(source.len <= source_bytes_max);
     assert(needles.len == 4);
@@ -65,7 +65,7 @@ pub fn verifyMainZig(
     const source = try dir.readFileAlloc(io, "main.zig", gpa, .limited(source_bytes_max));
     defer gpa.free(source);
 
-    var missing: std.ArrayListUnmanaged(u8) = .empty;
+    var missing: std.ArrayList(u8) = .empty;
     defer missing.deinit(gpa);
     try collectMissingNeedles(gpa, source, &missing);
     if (missing.items.len == 0) return;
@@ -301,7 +301,7 @@ fn expectMissing(
     assert(source.len <= source_bytes_max);
     assert(want_present.len + want_absent.len > 0);
 
-    var missing: std.ArrayListUnmanaged(u8) = .empty;
+    var missing: std.ArrayList(u8) = .empty;
     defer missing.deinit(testing.allocator);
     try collectMissingNeedles(testing.allocator, source, &missing);
 
@@ -346,7 +346,7 @@ test "missing production needle is reported by name" {
 
 test "complete production snippet is clean even with decoys" {
     const source = decoy_comment ++ decoy_string ++ decoy_test ++ complete_prod;
-    var missing: std.ArrayListUnmanaged(u8) = .empty;
+    var missing: std.ArrayList(u8) = .empty;
     defer missing.deinit(testing.allocator);
     try collectMissingNeedles(testing.allocator, source, &missing);
     try testing.expectEqual(@as(usize, 0), missing.items.len);

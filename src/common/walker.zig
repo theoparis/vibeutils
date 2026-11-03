@@ -161,7 +161,7 @@ const Frame = struct {
     /// Which root operand index this descended from.
     root_index: u32,
     /// Non-null when sort_children=true: pre-collected sorted entries.
-    sorted_entries: ?std.ArrayListUnmanaged(DirEntry),
+    sorted_entries: ?std.ArrayList(DirEntry),
     /// Next index into sorted_entries to consume.
     sorted_index: u32,
     /// (device, inode) of this directory. Populated whenever the id was
@@ -207,13 +207,13 @@ pub const Walker = struct {
     config: WalkConfig,
 
     /// Explicit stack of in-progress directory frames. Never exceeds max_depth.
-    stack: std.ArrayListUnmanaged(Frame),
+    stack: std.ArrayList(Frame),
 
     /// Full path of the entry that triggered the most recent per-entry error
     /// from next(): a directory cycle, or a failed openDir during descent.
     /// Valid until the next next() call; exposed via errorPath() (and, for the
     /// cycle case, cyclePath()). error_path_valid gates a meaningful value.
-    error_path_buf: std.ArrayListUnmanaged(u8),
+    error_path_buf: std.ArrayList(u8),
 
     /// True when error_path_buf names the entry behind the error the most
     /// recent next() returned. Reset at the start of every next() so a
@@ -221,7 +221,7 @@ pub const Walker = struct {
     error_path_valid: bool,
 
     /// Root operand queue. The walker drains this before declaring done.
-    roots: std.ArrayListUnmanaged(RootSpec),
+    roots: std.ArrayList(RootSpec),
 
     /// Index of the next root to start (into roots array).
     root_cursor: u32,
@@ -231,7 +231,7 @@ pub const Walker = struct {
 
     /// Scratch buffer for the path of the currently-emitted entry.
     /// Reused across calls to avoid allocator churn.
-    path_buf: std.ArrayListUnmanaged(u8),
+    path_buf: std.ArrayList(u8),
 
     /// Running total of entries emitted. Bounds-checked against max_entries.
     entries_emitted: u64,
@@ -850,7 +850,7 @@ fn collectAndPreprocess(
 ) !void {
     assert(frame.sorted_entries == null);
     assert(frame.sorted_index == 0);
-    var entries: std.ArrayListUnmanaged(DirEntry) = .empty;
+    var entries: std.ArrayList(DirEntry) = .empty;
     errdefer {
         for (entries.items) |de| allocator.free(de.name);
         entries.deinit(allocator);
@@ -989,7 +989,7 @@ fn drainEntries(
     walker: *Walker,
     io: std.Io,
     allocator: std.mem.Allocator,
-    out: *std.ArrayListUnmanaged(Entry),
+    out: *std.ArrayList(Entry),
 ) !void {
     while (try walker.next(io)) |entry| {
         // Dupe the path so it outlives the walker's internal path_buf.
@@ -1009,7 +1009,7 @@ fn drainWalker(
     walker: *Walker,
     io: std.Io,
     allocator: std.mem.Allocator,
-    out: *std.ArrayListUnmanaged([]const u8),
+    out: *std.ArrayList([]const u8),
 ) !u32 {
     var count: u32 = 0;
     while (try walker.next(io)) |entry| {
@@ -1079,7 +1079,7 @@ test "walker: pre-order ordering emits parent before children" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -1116,7 +1116,7 @@ test "walker: post-order ordering emits children before parent directory" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -1153,7 +1153,7 @@ test "walker: both-order emits each directory twice with pre before post" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -1850,7 +1850,7 @@ test "walker: follow_all emits a symlink-to-file as a file leaf" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -1899,7 +1899,7 @@ test "walker: follow_all descends symlink-to-dir and leafs symlink-to-file" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -1951,7 +1951,7 @@ test "walker: follow_all emits a broken symlink as a sym_link leaf" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -2001,7 +2001,7 @@ test "walker: follow_all does not hang or error on a symlink loop" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -2053,7 +2053,7 @@ test "walker: sort_children emits directory entries in alphabetical order" {
     defer testing.allocator.free(root);
     try w.addRoot(root);
 
-    var entries: std.ArrayListUnmanaged(Entry) = .empty;
+    var entries: std.ArrayList(Entry) = .empty;
     defer {
         for (entries.items) |e| testing.allocator.free(e.path);
         entries.deinit(testing.allocator);
@@ -2064,7 +2064,7 @@ test "walker: sort_children emits directory entries in alphabetical order" {
     try testing.expect(entries.items.len >= 3);
 
     // Filter to only non-directory entries for the order check.
-    var file_basenames: std.ArrayListUnmanaged([]const u8) = .empty;
+    var file_basenames: std.ArrayList([]const u8) = .empty;
     defer file_basenames.deinit(testing.allocator);
     for (entries.items) |e| {
         if (e.kind != .directory) {

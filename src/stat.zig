@@ -245,7 +245,7 @@ fn parseArgs(
 ) struct { opts: StatOptions, err: ?[]const u8 } {
     var opts = StatOptions{};
     var err_msg: ?[]const u8 = null;
-    var positionals: std.ArrayListUnmanaged([]const u8) = .empty;
+    var positionals: std.ArrayList([]const u8) = .empty;
     var i: usize = 0;
 
     while (i < args.len) : (i += 1) {

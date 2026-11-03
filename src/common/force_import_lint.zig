@@ -113,7 +113,7 @@ fn startsTopLevelTest(line: []const u8) bool {
 pub fn parseForceImports(
     gpa: std.mem.Allocator,
     lib_source: []const u8,
-    out: *std.ArrayListUnmanaged([]const u8),
+    out: *std.ArrayList([]const u8),
 ) !void {
     assert(lib_source.len > 0);
     assert(out.items.len == 0);
@@ -174,7 +174,7 @@ pub fn classify(
     imports: []const []const u8,
     modules_with_tests: []const []const u8,
     exemptions: []const Exemption,
-    report: *std.ArrayListUnmanaged(u8),
+    report: *std.ArrayList(u8),
 ) !u32 {
     assert(exemptions.len > 0);
     // `<=` for the same reason as containsName: collectModulesWithTests only
@@ -227,15 +227,15 @@ pub fn verify(
 
     const lib_source = try dir.readFileAlloc(io, "lib.zig", arena, .limited(1 << 22));
 
-    var imports: std.ArrayListUnmanaged([]const u8) = .empty;
+    var imports: std.ArrayList([]const u8) = .empty;
     try parseForceImports(arena, lib_source, &imports);
     if (imports.items.len < force_imports_min) return Error.SuspiciouslyFewImports;
 
-    var with_tests: std.ArrayListUnmanaged([]const u8) = .empty;
+    var with_tests: std.ArrayList([]const u8) = .empty;
     try collectModulesWithTests(arena, io, dir, &with_tests);
     if (with_tests.items.len < modules_with_tests_min) return Error.SuspiciouslyFewModules;
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     const violations = try classify(
         arena,
         imports.items,
@@ -259,7 +259,7 @@ fn collectModulesWithTests(
     arena: std.mem.Allocator,
     io: std.Io,
     dir: std.Io.Dir,
-    out: *std.ArrayListUnmanaged([]const u8),
+    out: *std.ArrayList([]const u8),
 ) !void {
     assert(out.items.len == 0);
 
@@ -415,7 +415,7 @@ test "parseForceImports: collects exactly the names between the markers" {
         "}\n" ++
         marker_end ++ "\n";
 
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
     try parseForceImports(testing.allocator, source, &out);
 
@@ -431,7 +431,7 @@ test "parseForceImports: ignores @import outside the markers" {
         marker_end ++ "\n" ++
         "pub const b = @import(\"decoy_after.zig\");\n";
 
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
     try parseForceImports(testing.allocator, source, &out);
 
@@ -444,7 +444,7 @@ test "parseForceImports: ignores @import outside the markers" {
 test "parseForceImports: an empty block yields no imports" {
     const source = "const a = 1;\n" ++ marker_begin ++ "\n" ++ marker_end ++ "\n";
 
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
     try parseForceImports(testing.allocator, source, &out);
 
@@ -453,7 +453,7 @@ test "parseForceImports: an empty block yields no imports" {
 
 test "parseForceImports: a missing begin marker is an error" {
     const source = "_ = @import(\"a.zig\");\n" ++ marker_end ++ "\n";
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
 
     try testing.expectError(
@@ -465,7 +465,7 @@ test "parseForceImports: a missing begin marker is an error" {
 
 test "parseForceImports: a missing end marker is an error" {
     const source = marker_begin ++ "\n_ = @import(\"a.zig\");\n";
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
 
     try testing.expectError(
@@ -477,7 +477,7 @@ test "parseForceImports: a missing end marker is an error" {
 
 test "parseForceImports: an inverted marker order is an error" {
     const source = marker_end ++ "\n_ = @import(\"a.zig\");\n" ++ marker_begin ++ "\n";
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
 
     try testing.expectError(
@@ -489,7 +489,7 @@ test "parseForceImports: an inverted marker order is an error" {
 
 test "parseForceImports: an unterminated import name is an error" {
     const source = marker_begin ++ "\n    _ = @import(\"a.zig\n" ++ marker_end ++ "\n";
-    var out: std.ArrayListUnmanaged([]const u8) = .empty;
+    var out: std.ArrayList([]const u8) = .empty;
     defer out.deinit(testing.allocator);
 
     // Distinct from ForceImportMarkersMissing: the markers are present and
@@ -513,7 +513,7 @@ test "classify: a module with tests absent from the imports is a violation" {
     const imports = [_][]const u8{"alpha.zig"};
     const with_tests = [_][]const u8{ "alpha.zig", "beta.zig" };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const violations = try classify(
@@ -534,7 +534,7 @@ test "classify: a fully imported set has no violations" {
     const imports = [_][]const u8{ "alpha.zig", "beta.zig" };
     const with_tests = [_][]const u8{ "alpha.zig", "beta.zig" };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const violations = try classify(
@@ -553,7 +553,7 @@ test "classify: an exempt module correctly absent from imports is clean" {
     const imports = [_][]const u8{"alpha.zig"};
     const with_tests = [_][]const u8{ "alpha.zig", "root.zig" };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const violations = try classify(
@@ -574,7 +574,7 @@ test "classify: a stale exemption is a violation" {
     const imports = [_][]const u8{ "alpha.zig", "root.zig" };
     const with_tests = [_][]const u8{ "alpha.zig", "root.zig" };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const violations = try classify(
@@ -600,7 +600,7 @@ test "classify: multiple violations accumulate and each is named" {
         "root.zig",
     };
 
-    var report: std.ArrayListUnmanaged(u8) = .empty;
+    var report: std.ArrayList(u8) = .empty;
     defer report.deinit(testing.allocator);
 
     const violations = try classify(
@@ -645,7 +645,7 @@ fn writeFixtureTree(
     }
     assert(i == module_count);
 
-    var lib: std.ArrayListUnmanaged(u8) = .empty;
+    var lib: std.ArrayList(u8) = .empty;
     defer lib.deinit(testing.allocator);
     // The fixture root carries a test of its own so the "lib.zig is exempt"
     // path is exercised rather than skipped for want of a test.

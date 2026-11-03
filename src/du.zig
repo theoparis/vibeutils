@@ -823,7 +823,7 @@ const PrintedRow = struct {
 /// the operand loop so each size can be scored against the printed max.
 const PrintedListing = struct {
     allocator: Allocator,
-    rows: std.ArrayListUnmanaged(PrintedRow) = .empty,
+    rows: std.ArrayList(PrintedRow) = .empty,
     max_bytes: u64 = 0,
     buffering: bool,
     /// Set when a path copy or row append fails. The listing is not emitted.

@@ -54,7 +54,7 @@ const CheckMode = enum {
 /// Parsed command-line options for sort
 const SortOptions = struct {
     global_flags: SortFlags = .{},
-    keys: std.ArrayListUnmanaged(KeyDef) = .empty,
+    keys: std.ArrayList(KeyDef) = .empty,
     field_separator: ?u8 = null,
     unique: bool = false,
     stable: bool = false,
@@ -72,7 +72,7 @@ const SortOptions = struct {
     random_source: ?[]const u8 = null,
     help: bool = false,
     version: bool = false,
-    files: std.ArrayListUnmanaged([]const u8) = .empty,
+    files: std.ArrayList([]const u8) = .empty,
 
     fn deinit(self: *SortOptions, allocator: Allocator) void {
         self.keys.deinit(allocator);
@@ -604,9 +604,9 @@ pub fn runSort(
     }
 
     // Read all lines from files or stdin.
-    var lines: std.ArrayListUnmanaged([]const u8) = .empty;
+    var lines: std.ArrayList([]const u8) = .empty;
     defer lines.deinit(allocator);
-    var buffers: std.ArrayListUnmanaged([]const u8) = .empty;
+    var buffers: std.ArrayList([]const u8) = .empty;
     defer {
         for (buffers.items) |buf| allocator.free(buf);
         buffers.deinit(allocator);
@@ -708,19 +708,19 @@ fn runSort_runMerge(
     std.debug.assert(opts.merge_only);
     std.debug.assert(opts.files.items.len > 1);
 
-    var per_file_lines: std.ArrayListUnmanaged(std.ArrayListUnmanaged([]const u8)) = .empty;
+    var per_file_lines: std.ArrayList(std.ArrayList([]const u8)) = .empty;
     defer {
         for (per_file_lines.items) |*fl| fl.deinit(allocator);
         per_file_lines.deinit(allocator);
     }
-    var merge_buffers: std.ArrayListUnmanaged([]const u8) = .empty;
+    var merge_buffers: std.ArrayList([]const u8) = .empty;
     defer {
         for (merge_buffers.items) |buf| allocator.free(buf);
         merge_buffers.deinit(allocator);
     }
 
     for (opts.files.items) |file_path| {
-        var file_lines: std.ArrayListUnmanaged([]const u8) = .empty;
+        var file_lines: std.ArrayList([]const u8) = .empty;
         if (std.mem.eql(u8, file_path, "-")) {
             const stdin_file = std.Io.File.stdin();
             try readLines(allocator, io, stdin_file, &file_lines, delimiter, &merge_buffers);
@@ -775,8 +775,8 @@ fn runSort_readAllFiles(
     allocator: Allocator,
     io: std.Io,
     opts: *const SortOptions,
-    lines: *std.ArrayListUnmanaged([]const u8),
-    buffers: *std.ArrayListUnmanaged([]const u8),
+    lines: *std.ArrayList([]const u8),
+    buffers: *std.ArrayList([]const u8),
     delimiter: u8,
     stderr_writer: *std.Io.Writer,
 ) !?u8 {
@@ -862,9 +862,9 @@ fn readLines(
     allocator: Allocator,
     io: std.Io,
     file: std.Io.File,
-    lines: *std.ArrayListUnmanaged([]const u8),
+    lines: *std.ArrayList([]const u8),
     delimiter: u8,
-    buffers: *std.ArrayListUnmanaged([]const u8),
+    buffers: *std.ArrayList([]const u8),
 ) !void {
     const delimiter_valid = delimiter == '\n' or delimiter == 0;
     std.debug.assert(delimiter_valid);
@@ -1599,8 +1599,8 @@ fn mergeLines(
     allocator: Allocator,
     file_lines: []const []const []const u8,
     ctx: SortContext,
-) !std.ArrayListUnmanaged([]const u8) {
-    var result: std.ArrayListUnmanaged([]const u8) = .empty;
+) !std.ArrayList([]const u8) {
+    var result: std.ArrayList([]const u8) = .empty;
     errdefer result.deinit(allocator);
 
     // Track current position in each file's lines
@@ -2392,9 +2392,9 @@ test "readLines does not leak the content buffer" {
     const file = try std.Io.Dir.cwd().openFile(testing.io, tmp_path, .{});
     defer file.close(testing.io);
 
-    var lines: std.ArrayListUnmanaged([]const u8) = .empty;
+    var lines: std.ArrayList([]const u8) = .empty;
     defer lines.deinit(allocator);
-    var bufs: std.ArrayListUnmanaged([]const u8) = .empty;
+    var bufs: std.ArrayList([]const u8) = .empty;
     defer {
         for (bufs.items) |buf| allocator.free(buf);
         bufs.deinit(allocator);

@@ -64,7 +64,7 @@ const TreeArgs = struct {
 const Node = struct {
     name: []const u8,
     kind: FileKind,
-    children: std.ArrayListUnmanaged(*Node) = .empty,
+    children: std.ArrayList(*Node) = .empty,
 };
 
 const WalkFilter = struct {
@@ -396,7 +396,7 @@ fn collectIgnorePatterns(
     args: []const []const u8,
 ) ![]const []const u8 {
     std.debug.assert(args.len < args_len_max);
-    var list: std.ArrayListUnmanaged([]const u8) = .empty;
+    var list: std.ArrayList([]const u8) = .empty;
     var i: u32 = 0;
     while (i < args.len) : (i += 1) {
         std.debug.assert(i < args.len);
@@ -411,7 +411,7 @@ fn collectIgnoreAt(
     arena: Allocator,
     args: []const []const u8,
     i: u32,
-    list: *std.ArrayListUnmanaged([]const u8),
+    list: *std.ArrayList([]const u8),
 ) !u32 {
     std.debug.assert(i < args.len);
     std.debug.assert(args.len < args_len_max);
@@ -467,7 +467,7 @@ fn takeNextPattern(
     arena: Allocator,
     args: []const []const u8,
     i: u32,
-    list: *std.ArrayListUnmanaged([]const u8),
+    list: *std.ArrayList([]const u8),
 ) !u32 {
     std.debug.assert(i < args.len);
     std.debug.assert(i + 1 < args.len);
@@ -479,7 +479,7 @@ fn collectIgnoreCluster(
     arena: Allocator,
     args: []const []const u8,
     i: u32,
-    list: *std.ArrayListUnmanaged([]const u8),
+    list: *std.ArrayList([]const u8),
 ) !u32 {
     std.debug.assert(i < args.len);
     const arg = args[i];
@@ -500,7 +500,7 @@ fn takeClusterValue(
     args: []const []const u8,
     i: u32,
     j: u32,
-    list: *std.ArrayListUnmanaged([]const u8),
+    list: *std.ArrayList([]const u8),
 ) !u32 {
     std.debug.assert(i < args.len);
     std.debug.assert(j < args[i].len);
@@ -575,7 +575,7 @@ fn walkDirectory(
     });
     defer walker.deinit(io);
     try walker.addRoot(operand);
-    var parents: std.ArrayListUnmanaged(*Node) = .empty;
+    var parents: std.ArrayList(*Node) = .empty;
     try parents.append(arena, root);
     return drainWalker(
         gpa,
@@ -594,7 +594,7 @@ fn drainWalker(
     arena: Allocator,
     io: std.Io,
     walker: *common.walker.Walker,
-    parents: *std.ArrayListUnmanaged(*Node),
+    parents: *std.ArrayList(*Node),
     walk_opts: WalkFilter,
     stderr_writer: *std.Io.Writer,
     counts: *Counts,
@@ -668,7 +668,7 @@ fn resolveEntryKind(entry: common.walker.Entry) FileKind {
 fn consumeEntry(
     arena: Allocator,
     walker: *common.walker.Walker,
-    parents: *std.ArrayListUnmanaged(*Node),
+    parents: *std.ArrayList(*Node),
     walk_opts: WalkFilter,
     entry: common.walker.Entry,
     counts: *Counts,
@@ -738,7 +738,7 @@ fn patternMatches(name: []const u8, pattern: []const u8) bool {
 
 fn attachChild(
     arena: Allocator,
-    parents: *std.ArrayListUnmanaged(*Node),
+    parents: *std.ArrayList(*Node),
     node: *Node,
     depth: u16,
     counts: *Counts,
@@ -755,7 +755,7 @@ fn attachChild(
 
 fn setParentAtDepth(
     arena: Allocator,
-    parents: *std.ArrayListUnmanaged(*Node),
+    parents: *std.ArrayList(*Node),
     node: *Node,
     depth: u16,
 ) !void {

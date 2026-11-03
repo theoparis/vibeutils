@@ -150,7 +150,7 @@ pub fn canonicalizeMissing(allocator: Allocator, io: std.Io, path: []const u8) !
     defer allocator.free(abs_path);
 
     // Collect all components
-    var all_components: std.ArrayListUnmanaged([]const u8) = .empty;
+    var all_components: std.ArrayList([]const u8) = .empty;
     defer all_components.deinit(allocator);
 
     try canonicalizeMissing_collectComponents(allocator, abs_path, &all_components);
@@ -222,7 +222,7 @@ fn canonicalizeMissing_absolutePath(
 fn canonicalizeMissing_collectComponents(
     allocator: Allocator,
     abs_path: []const u8,
-    list: *std.ArrayListUnmanaged([]const u8),
+    list: *std.ArrayList([]const u8),
 ) !void {
     std.debug.assert(abs_path.len > 0);
     std.debug.assert(abs_path[0] == '/');
@@ -304,7 +304,7 @@ fn canonicalizeMissing_appendRemaining(
     std.debug.assert(prefix.len > 0);
     std.debug.assert(prefix[0] == '/');
 
-    var remaining = std.ArrayListUnmanaged(u8).empty;
+    var remaining = std.ArrayList(u8).empty;
     defer remaining.deinit(allocator);
     try remaining.appendSlice(allocator, prefix);
 
@@ -340,10 +340,10 @@ fn canonicalizeMissing_normalizeLogical(
 ) ![]u8 {
     std.debug.assert(components.len > 0);
 
-    var result = std.ArrayListUnmanaged(u8).empty;
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
-    var cleaned = std.ArrayListUnmanaged([]const u8).empty;
+    var cleaned = std.ArrayList([]const u8).empty;
     defer cleaned.deinit(allocator);
 
     for (components) |comp| {

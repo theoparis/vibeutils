@@ -407,7 +407,7 @@ fn posixAclIdName(id: u32, buf: *[256]u8, group: bool) []const u8 {
 
 fn appendPosixAclLine(
     allocator: std.mem.Allocator,
-    out: *std.ArrayListUnmanaged(u8),
+    out: *std.ArrayList(u8),
     tag: u16,
     perm: u16,
     id: u32,
@@ -466,7 +466,7 @@ fn formatPosixAclBlob(allocator: std.mem.Allocator, blob: []const u8) ?[]u8 {
     const count = rest.len / 8;
     if (count == 0 or count > posix_acl_dump_entries_max) return null;
 
-    var out: std.ArrayListUnmanaged(u8) = .empty;
+    var out: std.ArrayList(u8) = .empty;
     var i: u32 = 0;
     while (i < count) : (i += 1) {
         const rec = rest[i * 8 ..][0..8];

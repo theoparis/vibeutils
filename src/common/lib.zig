@@ -462,7 +462,7 @@ test "utilities must use writerStreaming not writer for stdout/stderr (issue #5)
     var src_walker = try src_dir.walk(testing.allocator);
     defer src_walker.deinit();
 
-    var violations: std.ArrayListUnmanaged(u8) = .empty;
+    var violations: std.ArrayList(u8) = .empty;
     defer violations.deinit(testing.allocator);
 
     var scanned: u32 = 0;
@@ -551,7 +551,7 @@ test "utility entry points keep stderr unbuffered" {
         "stderr_buf: [256]",
         ".stderr().writerStreaming(",
     };
-    var violations: std.ArrayListUnmanaged(u8) = .empty;
+    var violations: std.ArrayList(u8) = .empty;
     defer violations.deinit(testing.allocator);
 
     var scanned: u32 = 0;

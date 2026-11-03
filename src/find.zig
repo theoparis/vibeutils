@@ -628,7 +628,7 @@ fn parseArgs_collectLeadingGlobals(
     allocator: Allocator,
     args: []const []const u8,
     flags: *GlobalFlags,
-    start_paths: *std.ArrayListUnmanaged([]const u8),
+    start_paths: *std.ArrayList([]const u8),
 ) !usize { // tiger:allow:usize-arch returns slice index cursor; Zig indexing requires usize
     var expr_start: usize = 0; // tiger:allow:usize-arch slice index cursor
     var seen_end_of_options = false;
@@ -727,7 +727,7 @@ fn parseArgs_or(
 }
 
 fn parseArgs(allocator: Allocator, args: []const []const u8, stderr: anytype) !FindConfig {
-    var start_paths = std.ArrayListUnmanaged([]const u8).empty;
+    var start_paths = std.ArrayList([]const u8).empty;
     defer start_paths.deinit(allocator);
 
     var flags = GlobalFlags{};
@@ -793,7 +793,7 @@ fn exprContainsDelete(expr: *const Expression) bool {
     // Bound the walk well above any practical tree size; a left-leaning
     // implicit-AND chain of N tokens yields N nodes (tests reach 200000).
     const max_nodes: usize = 1_000_000; // tiger:allow:usize-arch node visit cap
-    var stack: std.ArrayListUnmanaged(*const Expression) = .empty;
+    var stack: std.ArrayList(*const Expression) = .empty;
     defer stack.deinit(std.heap.page_allocator);
 
     stack.append(std.heap.page_allocator, expr) catch return false;
@@ -842,10 +842,10 @@ const Operator = enum { op_or, op_and, op_lparen };
 /// Bundled into one struct so each helper stays small and takes few arguments
 /// (Tiger Style inverse-hourglass) while sharing the two stacks.
 const ParseState = struct {
-    op_stack: std.ArrayListUnmanaged(Operator),
-    val_stack: std.ArrayListUnmanaged(*Expression),
+    op_stack: std.ArrayList(Operator),
+    val_stack: std.ArrayList(*Expression),
     // not_count carried with each `(` so a `-not (` wraps the whole group.
-    paren_not_stack: std.ArrayListUnmanaged(usize), // tiger:allow:usize-arch -not per paren
+    paren_not_stack: std.ArrayList(usize), // tiger:allow:usize-arch -not per paren
     not_count: usize = 0, // tiger:allow:usize-arch pending -not before next operand
     expect_operand: bool = true, // true = operand position, false = operator position
 };
@@ -1091,7 +1091,7 @@ fn parsePrimary_collectExecArgs(
     assert(pos.* <= args.len);
     assert(predicate.len > 0);
     is_batch_out.* = false;
-    var exec_args = std.ArrayListUnmanaged([]const u8).empty;
+    var exec_args = std.ArrayList([]const u8).empty;
     defer exec_args.deinit(allocator);
 
     while (pos.* < args.len) {
@@ -1935,8 +1935,8 @@ fn parsePrimary(
 // ============================================================================
 
 const BatchContext = struct {
-    exec_paths: std.ArrayListUnmanaged([]const u8) = .empty,
-    execdir_paths: std.ArrayListUnmanaged([]const u8) = .empty,
+    exec_paths: std.ArrayList([]const u8) = .empty,
+    execdir_paths: std.ArrayList([]const u8) = .empty,
     exec_template: ?[]const []const u8 = null,
     execdir_template: ?[]const []const u8 = null,
     execdir_dir: ?[]const u8 = null,
@@ -1953,7 +1953,7 @@ const BatchContext = struct {
         const template = self.exec_template.?;
         assert(self.exec_paths.items.len > 0);
 
-        var argv = std.ArrayListUnmanaged([]const u8).empty;
+        var argv = std.ArrayList([]const u8).empty;
         defer argv.deinit(allocator);
 
         // Build argv: template args, replacing {} with collected paths
@@ -2003,7 +2003,7 @@ const BatchContext = struct {
         const template = self.execdir_template.?;
         assert(self.execdir_paths.items.len > 0);
 
-        var argv = std.ArrayListUnmanaged([]const u8).empty;
+        var argv = std.ArrayList([]const u8).empty;
         defer argv.deinit(allocator);
 
         var found_placeholder = false;
@@ -2093,9 +2093,9 @@ fn evaluate(
     pruned: *bool,
     batch_ctx: ?*BatchContext,
 ) bool {
-    var work_stack: std.ArrayListUnmanaged(Frame) = .empty;
+    var work_stack: std.ArrayList(Frame) = .empty;
     defer work_stack.deinit(allocator);
-    var value_stack: std.ArrayListUnmanaged(bool) = .empty;
+    var value_stack: std.ArrayList(bool) = .empty;
     defer value_stack.deinit(allocator);
 
     // On allocation failure we cannot finish evaluating; surface it via
@@ -2148,8 +2148,8 @@ const EvalContext = struct {
 // stack push fails; evaluate() maps that to had_error and a non-match.
 fn evaluateLoop(
     ctx: *const EvalContext,
-    work_stack: *std.ArrayListUnmanaged(Frame),
-    value_stack: *std.ArrayListUnmanaged(bool),
+    work_stack: *std.ArrayList(Frame),
+    value_stack: *std.ArrayList(bool),
     expr: *const Expression,
     stdout: anytype,
     stderr: anytype,
@@ -2218,7 +2218,7 @@ fn evaluateLoop(
 
 // Append one frame to the work stack, asserting the Tiger Style bound first.
 fn evaluatePush(
-    work_stack: *std.ArrayListUnmanaged(Frame),
+    work_stack: *std.ArrayList(Frame),
     allocator: Allocator,
     frame: Frame,
 ) error{OutOfMemory}!void {
@@ -2914,7 +2914,7 @@ fn doDelete(
 }
 
 fn doExec(io: std.Io, allocator: Allocator, path: []const u8, exec_data: ExecExpr) bool {
-    var argv = std.ArrayListUnmanaged([]const u8).empty;
+    var argv = std.ArrayList([]const u8).empty;
     defer argv.deinit(allocator);
 
     for (exec_data.argv) |arg| {
@@ -2945,7 +2945,7 @@ fn doExecdir(
     basename: []const u8,
     exec_data: ExecExpr,
 ) bool {
-    var argv = std.ArrayListUnmanaged([]const u8).empty;
+    var argv = std.ArrayList([]const u8).empty;
     defer argv.deinit(allocator);
 
     // Replace {} with ./basename (POSIX says relative to dir)
@@ -3311,9 +3311,9 @@ const WalkState = struct {
     walker: *Walker,
 
     /// Current follow chain of open directories (for -L loop detection).
-    ancestors: std.ArrayListUnmanaged(AncestorDir),
+    ancestors: std.ArrayList(AncestorDir),
     /// Pending symlink follows discovered during this walk.
-    hops: *std.ArrayListUnmanaged(SymlinkHop),
+    hops: *std.ArrayList(SymlinkHop),
     /// Device of the operand root, captured at effective_depth 0 (for -xdev).
     root_dev: ?i64,
     /// Most recent pre-order directory (for error attribution / -depth).
@@ -3446,7 +3446,7 @@ fn findUnreadableChildDir(
 fn normalizeWalkerPath(allocator: Allocator, path: []const u8) []const u8 {
     assert(path.len > 0);
     if (std.mem.find(u8, path, "//") == null) return path;
-    var out = std.ArrayListUnmanaged(u8).initCapacity(allocator, path.len) catch return path;
+    var out = std.ArrayList(u8).initCapacity(allocator, path.len) catch return path;
     var prev_slash = false;
     for (path) |ch| {
         if (ch == '/' and prev_slash) continue;
@@ -3849,7 +3849,7 @@ fn enqueueSymlinkHop(
 /// max_entries on each sub-walker plus an outer iteration cap.
 fn drainSymlinkHops(
     state: *WalkState,
-    hops: *std.ArrayListUnmanaged(SymlinkHop),
+    hops: *std.ArrayList(SymlinkHop),
     stdout: anytype,
     stderr: anytype,
 ) void {
@@ -4052,7 +4052,7 @@ pub fn runFind(
         };
         defer walker.deinit(io);
 
-        var hops: std.ArrayListUnmanaged(SymlinkHop) = .empty;
+        var hops: std.ArrayList(SymlinkHop) = .empty;
         defer hops.deinit(allocator);
 
         var state = WalkState{

@@ -124,7 +124,7 @@ fn parseRangeList_mergeSorted(allocator: Allocator, sorted: []const Range) ![]Ra
     assert(sorted.len >= 1);
     assert(sorted[0].start >= 1);
 
-    var merged = std.ArrayListUnmanaged(Range).empty;
+    var merged = std.ArrayList(Range).empty;
     errdefer merged.deinit(allocator);
 
     try merged.append(allocator, sorted[0]);
@@ -158,7 +158,7 @@ fn parseRangeList_mergeSorted(allocator: Allocator, sorted: []const Range) ![]Ra
 /// Returns a sorted, merged array of Range values.
 /// Caller owns the returned slice.
 fn parseRangeList(allocator: Allocator, list_str: []const u8) ![]Range {
-    var ranges = std.ArrayListUnmanaged(Range).empty;
+    var ranges = std.ArrayList(Range).empty;
     defer ranges.deinit(allocator);
 
     var iter = std.mem.tokenizeAny(u8, list_str, ", ");
@@ -819,7 +819,7 @@ fn processFile(
     const reader = &file_reader.interface;
 
     // Read line by line using the reader interface
-    var line_buf = std.ArrayListUnmanaged(u8).empty;
+    var line_buf = std.ArrayList(u8).empty;
     defer line_buf.deinit(allocator);
 
     // readLine returns eof=true at stream end; this loop breaks when eof and
@@ -997,7 +997,7 @@ fn emitLine_fields(
 /// Returns true if EOF was reached.
 fn readLine(
     reader: anytype,
-    buf: *std.ArrayListUnmanaged(u8),
+    buf: *std.ArrayList(u8),
     allocator: Allocator,
     line_terminator: u8,
 ) !bool {

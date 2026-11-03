@@ -998,7 +998,7 @@ test "readlink -m dotdot past root returns root" {
     for (dir_path) |c| {
         if (c == '/') depth += 1;
     }
-    var path_buf: std.ArrayListUnmanaged(u8) = .empty;
+    var path_buf: std.ArrayList(u8) = .empty;
     defer path_buf.deinit(testing.allocator);
     try path_buf.appendSlice(testing.allocator, dir_path);
     try path_buf.appendSlice(testing.allocator, "/nonexistent");
@@ -1037,7 +1037,7 @@ test "readlink -m multi-level dotdot past root returns root" {
     for (dir_path) |c| {
         if (c == '/') depth += 1;
     }
-    var path_buf: std.ArrayListUnmanaged(u8) = .empty;
+    var path_buf: std.ArrayList(u8) = .empty;
     defer path_buf.deinit(testing.allocator);
     try path_buf.appendSlice(testing.allocator, dir_path);
     try path_buf.appendSlice(testing.allocator, "/a/b");
